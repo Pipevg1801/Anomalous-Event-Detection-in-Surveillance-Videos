@@ -1,0 +1,11 @@
+{
+  "umbral_global": 0.3,
+  "umbral_ind": 0.3,
+  "w_sem": 0.0,
+  "w_mov": 0.0,
+  "w_inter": 1.0,
+  "refuerzo_inter": 1.0,
+  "umbral_pareja": 0.6,
+  "umbral_claro": 0.8,
+  "alfa_clase": 0.3
+}
