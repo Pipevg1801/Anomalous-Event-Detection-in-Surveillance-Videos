@@ -1,0 +1,18 @@
+# Computer Vision & Deep Learning
+ultralytics
+open_clip_torch
+decord
+lap
+torch
+torchvision
+opencv-python
+pillow
+
+# Data Analysis & Scientific Computing
+numpy
+pandas
+scikit-learn
+
+# Visualization & Notebook Utilities
+matplotlib
+ipython
