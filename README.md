@@ -2,7 +2,7 @@
 
 Detects **when** an anomalous event happens in a surveillance video and **what kind** of event it is (robbery, assault or fighting), and **who** is involved. The output is an MP4 where every person is drawn in a green (normal) or red (involved) box with the event class.
 
-![Pipeline](./Images/pipeline.png)
+![Pipeline](./Images/Pipeline.png)
 
 ## How it works
 
