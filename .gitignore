@@ -1,6 +1,7 @@
 .gitignore
 .venv
 archive
+trabajo
 UCFClipFeatures
 VadCLIP-main
 Extras
