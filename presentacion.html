@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detección de anomalías en video</title>
+<style>
+@font-face{font-family:Archivo;src:url(fonts/archivo.woff2) format("woff2");font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:block}
+@font-face{font-family:Archivo;src:url(fonts/archivo-italic.woff2) format("woff2");font-weight:100 900;font-stretch:62% 125%;font-style:italic;font-display:block}
+:root{
+  --paper:#eef2e6; --paper-hi:#f8faf3; --sage:#9cb79a; --sage-ink:#7d9a7b;
+  --grid-mi:rgba(124,160,121,.16); --grid-ma:rgba(124,160,121,.36);
+  --ink:#1d2a24; --ink-2:#34433b; --muted:#53625a;
+  --pen:#c8281e; --ok:#2b6a3c; --truth:rgba(232,186,40,.34); --truth-ink:#765a00;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#141c18;height:100%}
+body{font-family:Archivo,"Segoe UI",sans-serif;font-stretch:100%;color:var(--ink);overflow:hidden;font-variant-numeric:tabular-nums}
+::selection{background:var(--pen);color:#fff}
+#deck{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center center}
+.slide{position:absolute;inset:0;background:var(--paper);display:none;padding:66px 64px 60px;overflow:hidden}
+.slide.active{display:block}
+body.print{overflow:visible;background:var(--paper)}
+body.print #deck{position:static;transform:none!important;width:auto;height:auto}
+body.print .slide{display:block;position:relative;width:1280px;height:720px;break-after:page}
+body.print .nav{display:none}
+
+/* ---- chart paper: the roll advances while a slide is on screen ---- */
+.paper{position:absolute;top:0;bottom:0;left:0;width:1360px;z-index:0;pointer-events:none;
+  background:
+    linear-gradient(var(--grid-ma) 1px,transparent 1px) 0 6px/80px 80px,
+    linear-gradient(90deg,var(--grid-ma) 1px,transparent 1px) 0 0/80px 80px,
+    linear-gradient(var(--grid-mi) 1px,transparent 1px) 0 6px/16px 16px,
+    linear-gradient(90deg,var(--grid-mi) 1px,transparent 1px) 0 0/16px 16px}
+.slide.live .paper{animation:roll 32s linear infinite}
+@keyframes roll{to{transform:translateX(-80px)}}
+.slide>:where(:not(.paper)){position:relative;z-index:1}
+
+/* ---- roll edges: running head + deck scale ---- */
+.edge-top{position:absolute!important;left:0;right:0;top:0;height:46px}
+.perf{height:14px;background:radial-gradient(circle at 10px 7px,#c7d2bb 0 3.6px,transparent 4.2px) 0 0/20px 14px,var(--paper-hi);border-bottom:1px solid var(--sage)}
+.rh{display:flex;justify-content:space-between;align-items:center;padding:9px 64px 0;font-weight:700;font-size:12.5px;line-height:1;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.rh .r{display:flex;gap:18px;align-items:center}
+.rec{display:inline-flex;align-items:center;gap:7px;color:var(--pen)}
+.rec i{width:8px;height:8px;border-radius:50%;background:var(--pen)}
+.slide.live .rec i{animation:blink 2.4s steps(2,jump-none) infinite}
+@keyframes blink{50%{opacity:.25}}
+.scale{position:absolute!important;left:0;right:0;bottom:0;height:42px;border-top:1px solid var(--sage);background:var(--paper-hi);display:grid;grid-template-columns:repeat(var(--n,9),1fr);padding:0 48px}
+.scale span{position:relative;font-weight:600;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:15px 0 0 7px;white-space:nowrap;overflow:hidden;border-left:1px solid var(--sage-ink)}
+.scale span::before{content:"";position:absolute;left:-1px;top:0;height:7px;border-left:1px solid var(--ink)}
+.scale span.on{color:var(--ink);font-weight:800}
+.scale .mark{position:absolute;top:-1px;left:-6px;width:12px;height:9px;background:var(--pen);clip-path:polygon(0 0,100% 0,50% 100%)}
+.slide.play .scale .mark{animation:markin .7s var(--ease) .1s backwards}
+@keyframes markin{from{transform:translateX(-100px)}}
+
+/* ---- type ---- */
+h2{font-size:44px;font-weight:800;font-stretch:80%;line-height:1.02;letter-spacing:-.005em;margin-bottom:26px;max-width:1080px;text-wrap:balance}
+h2 em{font-style:italic;font-weight:800}
+h3{font-size:22px;font-weight:800;font-stretch:85%;line-height:1.15}
+p,li{font-size:20px;line-height:1.45;text-wrap:pretty}
+strong{font-weight:750}
+.muted{color:var(--muted)}
+ul{list-style:none}
+li{position:relative;padding-left:26px;margin-bottom:11px}
+li::before{content:"";position:absolute;left:2px;top:.68em;width:13px;height:2px;background:var(--ink)}
+li.ok::before,li.ko::before,li.nx::before{width:18px;height:18px;top:.2em;left:0;background:none}
+li.ok,li.ko,li.nx{padding-left:30px}
+.mk{position:absolute;left:0;top:.22em;width:18px;height:18px;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.slide.play .mk{stroke-dasharray:1;animation:draw .55s cubic-bezier(.65,0,.35,1) backwards;animation-delay:calc(var(--d,0)*160ms + 700ms)}
+.mk.ok{stroke:var(--ok)} .mk.ko{stroke:var(--pen)} .mk.nx{stroke:var(--ink)}
+.cols{display:grid;gap:40px}
+.c2{grid-template-columns:1fr 1fr} .c32{grid-template-columns:3fr 2fr}
+.col>h3{position:relative;padding-top:12px;margin-bottom:14px}
+.col>h3::before{content:"";position:absolute;left:0;right:0;top:0;height:2.5px;background:var(--ink);transform-origin:left}
+.slide.play .col>h3::before{animation:grow 1s cubic-bezier(.65,0,.35,1) backwards;animation-delay:calc(var(--d,0)*160ms + 150ms)}
+.cap{font-size:13.5px;line-height:1.35;color:var(--muted);margin-top:8px}
+.lab{font-weight:700;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+/* ---- plates (figures pinned on the roll) ---- */
+.plate{background:#fff;padding:10px;border:1px solid var(--sage);box-shadow:0 10px 22px -16px rgba(29,42,36,.55);position:relative;overflow:hidden}
+.plate img,.plate video{display:block;width:100%;height:auto}
+.plate::after{content:"";position:absolute;top:0;bottom:0;left:100%;width:2px;background:var(--pen);opacity:0}
+.slide.play .plate>img,.slide.play .plate>video{animation:plot 1.15s cubic-bezier(.65,0,.35,1) backwards;animation-delay:calc(var(--d,0)*110ms + 250ms)}
+.slide.play .plate::after{animation:penline 1.15s cubic-bezier(.65,0,.35,1) backwards;animation-delay:calc(var(--d,0)*110ms + 250ms)}
+@keyframes plot{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes penline{0%{left:0;opacity:1}92%{left:100%;opacity:1}100%{left:100%;opacity:0}}
+
+/* ---- builds: always visible by default; play only animates in ---- */
+.slide.play [data-b]{animation:rise .8s var(--ease) backwards;animation-delay:calc(var(--d,0)*110ms + 120ms)}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.slide.play .draw{stroke-dasharray:1;animation:draw 1.4s cubic-bezier(.65,0,.35,1) backwards;animation-delay:calc(var(--d,0)*110ms + 300ms)}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.slide.play .grow{animation:grow 1s var(--ease) backwards;animation-delay:calc(var(--d,0)*70ms + 300ms)}
+@keyframes grow{from{transform:scaleX(0)}}
+
+/* ---- tables ---- */
+table{border-collapse:collapse;width:100%;font-size:17.5px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--sage);text-align:left}
+th{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--ink)}
+td.n,th.n{text-align:right}
+
+/* ---- cover ---- */
+.cover{padding:0}
+#trace0{position:absolute;left:0;top:52px;width:1280px;height:300px}
+.tl{font-family:Archivo;font-weight:700;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase}
+.cover h1{position:absolute;left:60px;top:352px;width:1100px;font-size:92px;font-weight:850;font-stretch:72%;line-height:.96;letter-spacing:-.01em}
+.cover .sub{position:absolute;left:66px;top:562px;width:940px;font-size:22px;line-height:1.35;color:var(--ink-2)}
+.cover .team{position:absolute;left:66px;top:622px;font-size:18px;font-weight:650;letter-spacing:.01em}
+.cover .team b{font-weight:700;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-right:14px}
+.trem{transform-box:fill-box}
+.slide.live .trem.idle{animation:trem .18s steps(3) infinite}
+@keyframes trem{33%{transform:translateY(-1.5px)}66%{transform:translateY(1px)}}
+
+/* ---- channels (component rationale) ---- */
+.chan{position:relative;display:grid;grid-template-columns:210px 1fr;gap:28px;padding:15px 0 14px}
+.chan::before{content:"";position:absolute;left:0;right:0;top:0;height:1.5px;background:var(--ink);transform-origin:left}
+.slide.play .chan::before{animation:grow 1.1s cubic-bezier(.65,0,.35,1) backwards;animation-delay:calc(var(--d,0)*260ms)}
+.slide.play .chan[data-b]{animation-name:fadein;animation-delay:calc(var(--d,0)*260ms + 250ms)}
+@keyframes fadein{from{opacity:0}}
+.chan:last-of-type{border-bottom:1px solid var(--sage)}
+.chan .lab{padding-top:6px}
+.chan .lab b{display:block;color:var(--ink);font-size:13px;margin-top:4px}
+.chan h3{margin-bottom:4px}
+.chan p{font-size:18.5px;line-height:1.42;max-width:900px}
+
+/* ---- readings (dot plot) ---- */
+.rd{display:grid;grid-template-columns:290px 1fr 130px;align-items:center;gap:22px;min-height:46px;padding:5px 0;border-top:1px solid var(--sage)}
+.rd:last-child{border-bottom:1px solid var(--sage)}
+.rd .k{font-size:17px;font-weight:700;line-height:1.3}
+.rd .k small{display:block;font-size:13px;font-weight:450;line-height:1.3;color:var(--muted)}
+.trk{position:relative;height:22px}
+.trk::before{content:"";position:absolute;left:0;right:0;top:11px;border-top:1.5px solid var(--ink)}
+.trk .t{position:absolute;top:6px;height:11px;border-left:1.5px solid var(--ink)}
+.trk .rf{position:absolute;top:0;height:22px;border-left:1.5px dashed var(--muted)}
+.trk .rf span{position:absolute;left:5px;top:-3px;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);white-space:nowrap}
+.trk .v{position:absolute;top:0;left:0;height:22px}
+.trk .v::after{content:"";position:absolute;right:-7px;top:4px;width:14px;height:14px;border-radius:50%;background:var(--pen);box-shadow:0 0 0 3px var(--paper)}
+.trk .v i{position:absolute;right:-4px;top:-14px;font-style:normal;font-size:11px;font-weight:800;color:var(--pen)}
+.slide.play .trk .v{animation:slide 1.2s var(--ease) backwards;animation-delay:calc(var(--d,0)*110ms + 400ms)}
+@keyframes slide{from{width:0}}
+.rd .val{font-size:26px;font-weight:800;font-stretch:80%;display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.rd .val .mk{position:static;width:20px;height:20px}
+
+/* ---- per-class chart ---- */
+.bars{display:grid;grid-template-columns:186px 1fr 1fr;column-gap:18px}
+.bars .hd{font-weight:800;font-stretch:85%;font-size:16.5px;padding-bottom:8px;border-bottom:2px solid var(--ink)}
+.bars .cl{font-size:15px;height:30px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.bars .cl small{color:var(--muted);font-size:12.5px}
+.bars .cl .mk{position:static;width:15px;height:15px;stroke-width:2.8}
+.bars .bc{position:relative;height:30px;display:flex;align-items:center}
+.bars .bar{height:14px;background:var(--ink);transform-origin:left}
+.bars .bv{position:relative;z-index:3;font-size:13.5px;font-weight:700;margin-left:4px;padding:0 3px;background:var(--paper)}
+.bwrap .ref{position:absolute;bottom:0;border-left:1.5px dashed var(--pen);z-index:2}
+.bwrap .ref span{position:absolute;left:4px;bottom:-17px;font-size:11px;font-weight:800;color:var(--pen);white-space:nowrap;background:var(--paper);padding:0 2px}
+.bwrap{position:relative}
+.note{border:1.5px solid var(--ink);background:var(--paper-hi);padding:14px 16px;font-size:18px;line-height:1.42}
+
+
+.sw{display:inline-block;width:22px;height:12px;vertical-align:-1px;margin-right:6px;border:1px solid rgba(0,0,0,.15)}
+.nav{position:fixed;bottom:58px;left:50%;transform:translateX(-50%);color:#fff;background:rgba(29,42,36,.86);padding:10px 16px;font:600 13px Archivo,sans-serif;letter-spacing:.03em;pointer-events:none;animation:hint 5s ease-in forwards}
+@keyframes hint{0%,70%{opacity:1}100%{opacity:0;visibility:hidden}}
+@page{size:1280px 720px;margin:0}
+@media (prefers-reduced-motion:reduce){.slide.live .paper,.slide.live .rec i,.slide.live .trem.idle{animation:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-ok" viewBox="0 0 20 20"><path pathLength="1" d="M3.5 10.5 L8 15 L16.5 4.5"/></symbol>
+  <symbol id="i-ko" viewBox="0 0 20 20"><path pathLength="1" d="M4.5 4.5 L15.5 15.5 M15.5 4.5 L4.5 15.5"/></symbol>
+  <symbol id="i-nx" viewBox="0 0 20 20"><path pathLength="1" d="M3 10 H16 M11 5 L16 10 L11 15"/></symbol>
+</svg>
+<div id="deck">
+
+<!-- 1 · Portada -->
+<section class="slide cover" data-short="Portada" data-right="Universidad Industrial de Santander" data-time="0:15">
+  <svg id="trace0" viewBox="0 0 1280 300" aria-label="Score de anomalía del video Burglary024 a lo largo de 120 segundos"></svg>
+  <h1 data-b style="--d:2">Detección de anomalías en videos de vigilancia</h1>
+  <p class="sub" data-b style="--d:3">Transformer temporal sobre features CLIP, entrenado con supervisión débil en UCF-Crime</p>
+  <p class="team" data-b style="--d:4"><b>Integrantes</b>Felipe Vargas García · Santiago Florez Santamaría</p>
+</section>
+
+<!-- 2 · Introducción -->
+<section class="slide" data-short="Problema" data-time="1:00">
+  <h2 data-b>Hay demasiadas cámaras y muy pocos ojos para vigilarlas</h2>
+  <div class="cols c32">
+    <ul>
+      <li data-b style="--d:1">Las cámaras de seguridad graban todo el día, pero casi nadie revisa la grabación en tiempo real. Los incidentes se descubren tarde.</li>
+      <li data-b style="--d:2">Las anomalías (robos, peleas, explosiones, accidentes) son <strong>raras y cortas</strong>: unos segundos dentro de horas de video normal.</li>
+      <li data-b style="--d:3">Anotar en qué frame empieza y termina cada evento es muy costoso. Lo realista es saber solo si <strong>el video completo</strong> contiene una anomalía.</li>
+      <li data-b style="--d:4">Por eso planteamos el problema como <strong>aprendizaje débilmente supervisado</strong>: se entrena con etiquetas por video y se predice a nivel de fragmento.</li>
+    </ul>
+    <figure>
+      <div class="plate" style="--d:1"><video id="demo" src="img/demo_salida.mp4" poster="img/demo_t20.png" muted loop playsinline preload="auto" aria-label="Video de salida del modelo sobre Burglary024"></video></div>
+      <figcaption class="cap">Burglary024 (UCF-Crime): video de salida del modelo, con el score y el intervalo detectado</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- 3 · Objetivo -->
+<section class="slide" data-short="Objetivo" data-time="0:45">
+  <h2 data-b>Decir si un video tiene una anomalía y en qué momento ocurre</h2>
+  <div class="cols c2">
+    <div class="col" data-b style="--d:1">
+      <h3>Lo que esperamos lograr</h3>
+      <ul>
+        <li><strong>Detectar</strong> si un video contiene un evento anómalo (nivel video).</li>
+        <li><strong>Localizar</strong> el evento: intervalos de inicio y fin en segundos.</li>
+        <li>Entregar un <strong>video anotado</strong> con el score, un borde rojo durante la anomalía y una línea de tiempo.</li>
+      </ul>
+    </div>
+    <div class="col" data-b style="--d:2">
+      <h3>Alcance de esta entrega</h3>
+      <ul>
+        <li>Dataset UCF-Crime: 13 tipos de anomalía + videos normales.</li>
+        <li>Detección <strong>binaria</strong> (anómalo / normal); todavía no se clasifica el tipo de evento.</li>
+        <li>Procesamiento offline sobre features precalculadas; también funciona con videos propios.</li>
+      </ul>
+    </div>
+  </div>
+  <figure style="margin-top:6px">
+    <svg id="chart3" viewBox="0 0 1152 200" style="width:100%;height:200px;display:block" aria-label="Curva de anomalía de Burglary024"></svg>
+    <figcaption class="cap" style="margin-top:2px">Salida esperada para un video: score por fragmento, evento real (amarillo) e intervalo detectado (rojo)</figcaption>
+  </figure>
+</section>
+
+<!-- 4 · Pipeline -->
+<section class="slide" data-short="Método" data-time="1:45" style="padding:66px 64px 56px">
+  <h2 data-b>Del video crudo a los intervalos anómalos</h2>
+  <div class="plate" style="max-width:1152px"><img src="img/pipeline.png" alt="Diagrama del pipeline: extracción de features, modelo temporal, entrenamiento débilmente supervisado, post-procesamiento y video de salida"></div>
+</section>
+
+<!-- 5 · Por qué -->
+<section class="slide" data-short="Componentes" data-time="1:15">
+  <h2 data-b>Por qué elegimos cada componente</h2>
+  <div class="chan" data-b style="--d:1"><div class="lab">Canal 1 · Features</div><div><h3>CLIP ViT-B/16 congelado</h3>
+    <p>Da una representación semántica robusta de cada escena sin entrenar un backbone visual. Usamos las features precalculadas de VadCLIP (10 recortes por video), así entrenar es rápido.</p></div></div>
+  <div class="chan" data-b style="--d:2"><div class="lab">Canal 2 · Modelo</div><div><h3>Transformer temporal</h3>
+    <p>La atención compara cada fragmento con todo el video: una anomalía se reconoce por contraste con su contexto. Usamos solo 2 capas para no sobreajustar con ~1.400 videos.</p></div></div>
+  <div class="chan" data-b style="--d:3"><div class="lab">Canal 3 · Pérdida</div><div><h3>MIL top-k</h3>
+    <p>Solo sabemos si el video es anómalo. Si lo es, <em>algunos</em> fragmentos deben tener un score alto: el promedio de los k más altos se compara con la etiqueta del video.</p></div></div>
+  <div class="chan" data-b style="--d:4"><div class="lab">Canal 4 · Priors</div><div><h3>bottom-k · dispersión · suavidad</h3>
+    <p>Codifican lo que sabemos de las anomalías: parte del video anómalo es normal, los eventos son cortos y el score cambia de forma gradual.</p></div></div>
+  <p class="muted" data-b style="--d:5;font-size:17.5px;margin-top:16px">El post-procesamiento (EMA, histéresis, unión de huecos y duración mínima) convierte la curva de scores en intervalos legibles.</p>
+</section>
+
+<!-- 6 · Configuración experimental -->
+<section class="slide" data-short="Setup" data-time="1:00">
+  <h2 data-b>Dataset, métricas e hiperparámetros</h2>
+  <div class="cols" style="grid-template-columns:1.05fr 1.2fr 1fr;gap:30px">
+    <div class="col" data-b style="--d:1">
+      <h3>UCF-Crime · 1.900 videos</h3>
+      <table>
+        <tr><th>Split</th><th class="n">Normal</th><th class="n">Anóm.</th><th class="n">Total</th></tr>
+        <tr><td>Train</td><td class="n">680</td><td class="n">688</td><td class="n">1.368</td></tr>
+        <tr><td>Val (15 %)</td><td class="n">120</td><td class="n">122</td><td class="n">242</td></tr>
+        <tr><td>Test oficial</td><td class="n">150</td><td class="n">140</td><td class="n">290</td></tr>
+      </table>
+      <p style="font-size:16.5px;margin-top:12px" class="muted">Video real de cámaras de seguridad, 13 clases de anomalía. Val estratificado por clase. Solo test tiene anotación temporal (inicio y fin del evento).</p>
+    </div>
+    <div class="col" data-b style="--d:2">
+      <h3>Métricas y por qué</h3>
+      <ul>
+        <li style="font-size:17.5px;margin-bottom:8px"><strong>AUC por frame</strong>: métrica estándar de UCF-Crime; no depende del umbral.</li>
+        <li style="font-size:17.5px;margin-bottom:8px"><strong>AUC por video</strong>: mide si se detecta que el video tiene una anomalía.</li>
+        <li style="font-size:17.5px;margin-bottom:8px"><strong>AUC de localización</strong>: AUC dentro de los videos anómalos (¿sabe <em>cuándo</em>?).</li>
+        <li style="font-size:17.5px;margin-bottom:8px"><strong>IoU</strong> entre intervalos detectados y reales, y % de eventos con IoU ≥ 0,3.</li>
+        <li style="font-size:17.5px;margin-bottom:8px"><strong>Precisión / recall / F1</strong> y falsas alarmas en videos normales.</li>
+      </ul>
+    </div>
+    <div class="col" data-b style="--d:3">
+      <h3>Entrenamiento</h3>
+      <table style="font-size:16.5px">
+        <tr><td>Secuencia</td><td class="n">256 fragm.</td></tr>
+        <tr><td>Dim · capas · cabezas</td><td class="n">512 · 2 · 8</td></tr>
+        <tr><td>Optimizador</td><td class="n">AdamW</td></tr>
+        <tr><td>lr / weight decay</td><td class="n">2e-5 / 1e-2</td></tr>
+        <tr><td>Lote</td><td class="n">64 (4×16)</td></tr>
+        <tr><td>Épocas</td><td class="n">10</td></tr>
+        <tr><td>Umbral</td><td class="n">0,09 (F1 val)</td></tr>
+      </table>
+      <p style="font-size:15.5px;margin-top:10px" class="muted">Lotes balanceados 50/50 y un recorte aleatorio por video como aumento de datos.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · Resultados: entrenamiento + lecturas -->
+<section class="slide" data-short="Métricas" data-time="0:45">
+  <h2 data-b>Detecta muy bien <em>si</em> hay anomalía, pero no <em>cuándo</em></h2>
+  <div style="display:grid;grid-template-columns:560px 1fr;gap:28px;align-items:end;margin-bottom:12px">
+    <div class="plate"><img src="img/entrenamiento.png" alt="Curvas de pérdida de entrenamiento y AUC de validación por época"></div>
+    <p class="cap" data-b style="--d:2;font-size:15px;margin:0">Pérdidas de entrenamiento (izq.) y AUC por video en validación (der.) a lo largo de 10 épocas.</p>
+  </div>
+  <div>
+    <div class="rd" data-b style="--d:1"><div class="k">AUC por video (test)<small>separa videos anómalos y normales</small></div>
+      <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:97.8%;--d:1"></span></div>
+      <div class="val"><span data-count>0,978</span><svg class="mk ok"><use href="#i-ok"/></svg></div></div>
+    <div class="rd" data-b style="--d:2"><div class="k">Falsas alarmas<small>videos normales con alguna falsa alarma</small></div>
+      <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:10%;--d:2"></span></div>
+      <div class="val"><span data-count>10 %</span><svg class="mk ok"><use href="#i-ok"/></svg></div></div>
+    <div class="rd" data-b style="--d:3"><div class="k">AUC por frame (estándar)<small>VadCLIP reporta ≈ 0,88</small></div>
+      <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="rf" style="left:88%"><span>VadCLIP</span></span><span class="v" style="width:69.4%;--d:3"></span></div>
+      <div class="val"><span data-count>0,694</span></div></div>
+    <div class="rd" data-b style="--d:4"><div class="k">AUC de localización<small>apenas sobre el azar (0,5)</small></div>
+      <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:100%"></span><span class="rf" style="left:50%"><span>azar</span></span><span class="v" style="width:58.9%;--d:4"></span></div>
+      <div class="val"><span data-count>0,589</span><svg class="mk ko"><use href="#i-ko"/></svg></div></div>
+    <div class="rd" data-b style="--d:5"><div class="k">IoU medio detectado vs real<small>39 % de eventos con IoU ≥ 0,3</small></div>
+      <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:24%;--d:5"></span></div>
+      <div class="val"><span data-count>0,24</span><svg class="mk ko"><use href="#i-ko"/></svg></div></div>
+    <div class="rd" data-b style="--d:6"><div class="k">Precisión / recall por frame<small>intervalos demasiado anchos</small></div>
+      <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:28%;--d:6"><i>P</i></span><span class="v" style="width:49%;--d:7"><i>R</i></span></div>
+      <div class="val"><span data-count>0,28 / 0,49</span></div></div>
+  </div>
+</section>
+
+<!-- 8 · Resultados por clase -->
+<section class="slide" data-short="Por clase" data-time="0:45">
+  <h2 data-b>La localización depende mucho del tipo de evento</h2>
+  <div class="cols" style="grid-template-columns:1.6fr 1fr;gap:34px">
+    <div class="bwrap" data-b style="--d:1" id="bars" aria-label="IoU medio y eventos detectados por clase"></div>
+    <div>
+      <p data-b style="--d:2;font-size:18px;margin-bottom:12px"><strong>Bien:</strong> Robbery (0,65), Arrest (0,46) y Burglary (0,41), eventos con una acción visible y acotada.</p>
+      <p data-b style="--d:3;font-size:18px;margin-bottom:12px"><strong>Mal:</strong> RoadAccidents, Explosion y Shoplifting (≈ 0,15), cada una con más de 20 videos de test.</p>
+      <p data-b style="--d:4;font-size:16px;margin-bottom:16px" class="muted">Hipótesis: los accidentes y explosiones duran instantes pero sus efectos (humo, gente reunida) siguen en escena; el hurto en tiendas es sutil. Abuse solo tiene 2 videos de test, no es concluyente.</p>
+      <div class="note" data-b style="--d:5">El entrenamiento converge en la época 5–6 (AUC val 0,986). El cuello de botella no es la detección sino la <strong>precisión temporal</strong> del score.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · Ejemplos -->
+<section class="slide" data-short="Ejemplos" data-time="0:30">
+  <h2 data-b>Ejemplos: los mejores y los peores casos</h2>
+  <div class="cols" style="grid-template-columns:400px 1fr;gap:36px">
+    <div class="plate" style="height:494px"><img src="img/curvas_test.png" alt="Curvas de anomalía de seis videos de test" style="height:474px;width:auto;margin:0 auto"></div>
+    <div>
+      <p data-b style="--d:1;font-size:16.5px;margin-bottom:14px"><span class="sw" style="background:#ffe9a6"></span>evento real &nbsp; <span class="sw" style="background:#f4a3a3"></span>detectado &nbsp; <span class="sw" style="height:0;border:0;border-top:2px dashed #888;vertical-align:3px"></span>umbral</p>
+      <ul>
+        <li class="ok" data-b style="--d:2;font-size:18px"><svg class="mk ok"><use href="#i-ok"/></svg>Arriba: Burglary, Arson y Robbery con IoU 0,89–0,96.</li>
+        <li class="ko" data-b style="--d:3;font-size:18px"><svg class="mk ko"><use href="#i-ko"/></svg>Abajo: tres Shoplifting con IoU 0. El modelo reacciona a otros momentos o no reacciona.</li>
+        <li class="nx" data-b style="--d:4;font-size:18px"><svg class="mk nx"><use href="#i-nx"/></svg>Umbral bajo (0,09) + unión de huecos de 5 s ⇒ intervalos anchos.</li>
+      </ul>
+      <div class="cols c2" style="gap:16px;margin-top:14px">
+        <figure><div class="plate" style="--d:3"><img src="img/demo_t20.png" alt="Frame anómalo"></div><figcaption class="cap">t = 20 s · anomalía</figcaption></figure>
+        <figure><div class="plate" style="--d:4"><img src="img/demo_t90.png" alt="Frame normal"></div><figcaption class="cap">t = 90 s · normal</figcaption></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+<div class="nav">← → para navegar · F pantalla completa</div>
+<script>
+// Score suavizado real de Burglary024 (digitalizado de img/demo_curva.png), un punto cada 0,5 s, 0–120 s.
+const SCORE=[0.011,0.018,0.032,0.056,0.116,0.208,0.581,0.775,0.842,0.792,0.771,0.877,0.852,0.757,0.479,0.324,0.363,0.641,0.806,0.873,0.898,0.866,0.778,0.521,0.236,0.155,0.085,0.07,0.092,0.141,0.331,0.623,0.627,0.349,0.363,0.394,0.342,0.592,0.778,0.718,0.718,0.757,0.542,0.349,0.327,0.158,0.155,0.236,0.08,0.056,0.049,0.067,0.137,0.194,0.553,0.581,0.697,0.81,0.785,0.63,0.32,0.387,0.669,0.588,0.306,0.162,0.077,0.06,0.06,0.092,0.173,0.408,0.595,0.426,0.137,0.074,0.039,0.028,0.021,0.025,0.046,0.089,0.225,0.106,0.042,0.025,0.011,0.007,0.007,0.007,0.007,0,0,0,0,0,0,0,0,0,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0,0,0,0,0,0,0.007,0.007,0,0,0.007,0,0,0,0,0,0.007,0,0,0,0,0.007,0.007,0,0,0,0.007,0.007,0,0,0,0,0,0,0,0,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0,0,0,0,0,0,0,0,0,0,0,0,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.007,0,0,0,0.007,0.007,0,0,0,0.007,0.007,0.007,0.011,0.011,0.007,0.007,0,0,0,0,0.007,0.007,0.007,0.007,0.007,0.007,0,0,0,0,0,0.007,0.007,0.007,0,0.007,0.007,0,0,0,0,0,0.007,0.007,0.007,0.011,0.011,0.007,0,0];
+const TRUTH=[1.9,41.1], DET=[2.3,41.8], THR=0.09;
+const NS='http://www.w3.org/2000/svg';
+const el=(tag,attrs,parent)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);parent&&parent.appendChild(e);return e;};
+const fmt=v=>String(v).replace('.',',');
+
+function plotScore(svg,{x0,x1,y0,y1,axis,labels}){
+  const X=t=>x0+(x1-x0)*t/120, Y=v=>y0-(y0-y1)*v;
+  el('rect',{x:X(TRUTH[0]),y:y1-12,width:X(TRUTH[1])-X(TRUTH[0]),height:y0-y1+12,fill:'var(--truth)'},svg);
+  el('line',{x1:x0,x2:x1,y1:Y(THR),y2:Y(THR),stroke:'#53625a','stroke-width':1.5,'stroke-dasharray':'6 5'},svg);
+  el('line',{x1:x0,x2:x1,y1:y0,y2:y0,stroke:'#1d2a24','stroke-width':1.5},svg);
+  for(let t=0;t<=120;t+=20){el('line',{x1:X(t),x2:X(t),y1:y0,y2:y0+7,stroke:'#1d2a24','stroke-width':1.5},svg);
+    const tx=el('text',{x:X(t),y:y0+22,'text-anchor':'middle',class:'tl',fill:'#53625a'},svg);tx.textContent=t+' s';}
+  if(DET&&axis){el('rect',{x:X(DET[0]),y:y0-7,width:X(DET[1])-X(DET[0]),height:7,fill:'#c8281e',class:'grow',style:'--d:6;transform-box:fill-box'},svg);}
+  const d=SCORE.map((v,i)=>(i?'L':'M')+X(i*.5).toFixed(1)+' '+Y(v).toFixed(1)).join(' ');
+  const p=el('path',{d,fill:'none',stroke:'#c8281e','stroke-width':axis?2.6:3.2,'stroke-linejoin':'round','stroke-linecap':'round'},svg);
+  labels.forEach(([x,y,txt,anchor,fill])=>{const t=el('text',{x,y,'text-anchor':anchor||'start',class:'tl',fill:fill||'#1d2a24'},svg);t.textContent=txt;});
+  if(axis){[[0,'0'],[.5,'0,5'],[1,'1']].forEach(([v,s])=>{const t=el('text',{x:x0-10,y:Y(v)+4,'text-anchor':'end',class:'tl',fill:'#53625a'},svg);t.textContent=s;});}
+  return {p,X,Y};
+}
+// Portada: el registrador dibuja el score real
+const cov=plotScore(document.getElementById('trace0'),{x0:64,x1:1216,y0:258,y1:52,labels:[
+  [80,32,'Evento real (anotación)','start','#765a00'],[1216,32,'Burglary024 · score de anomalía','end','#c8281e'],[478,234,'umbral 0,09','start','#53625a']]});
+const penG=el('g',{},document.getElementById('trace0'));
+const penT=el('g',{class:'trem'},penG);
+el('line',{x1:0,y1:0,x2:30,y2:-46,stroke:'#1d2a24','stroke-width':3,'stroke-linecap':'round'},penT);
+el('circle',{r:5,fill:'#c8281e',stroke:'#1d2a24','stroke-width':1.5},penT);
+const covEnd=cov.p.getPointAtLength(cov.p.getTotalLength());penG.setAttribute('transform',`translate(${covEnd.x},${covEnd.y})`);
+
+// Diapositiva 3: curva completa con ejes
+plotScore(document.getElementById('chart3'),{x0:44,x1:1118,y0:160,y1:24,axis:true,labels:[
+  [1140,12,'score suavizado · Burglary024','end','#c8281e']]}).p.setAttribute('class','draw');
+document.querySelector('#chart3 path.draw').setAttribute('pathLength','1');document.querySelector('#chart3 path.draw').style.setProperty('--d','3');
+
+// Diapositiva 8: IoU y eventos detectados por clase (datos de scripts/charts.py)
+const CL=[["Robbery",5,0.647,4,5,"ok"],["Arrest",5,0.464,4,5,"ok"],["Burglary",13,0.410,9,15,"ok"],["Fighting",5,0.374,3,5],["Assault",3,0.334,3,4],["Stealing",5,0.302,3,7],["Arson",9,0.288,3,10],["Shooting",23,0.225,13,25],["Vandalism",5,0.208,3,8],["Shoplifting",21,0.164,5,25,"ko"],["Explosion",21,0.148,5,22,"ko"],["RoadAccidents",23,0.146,6,23,"ko"],["Abuse",2,0.060,0,2]];
+(function(){const b=document.getElementById('bars');
+  let h='<div class="bars"><div class="hd">Clase (n test)</div><div class="hd">IoU medio por clase</div><div class="hd">Eventos detectados (IoU ≥ 0,3)</div>';
+  CL.forEach((c,i)=>{const det=c[3]/c[4];
+    h+=`<div class="cl">${c[5]?`<svg class="mk ${c[5]}"><use href="#i-${c[5]}"/></svg>`:'<span style="width:15px"></span>'}${c[0]} <small>(${c[1]})</small></div>`;
+    h+=`<div class="bc"><div class="bar grow" style="width:${c[2]*82}%;--d:${i}"></div><span class="bv">${fmt(c[2].toFixed(2))}</span></div>`;
+    h+=`<div class="bc"><div class="bar grow" style="width:${det*82}%;--d:${i}"></div><span class="bv">${fmt(det.toFixed(2))}</span></div>`;});
+  h+='</div>';b.innerHTML=h;
+})();
+
+function placeRefs(){const b=document.getElementById('bars');if(!b.offsetWidth||b.querySelector('.ref'))return;
+  const cols=b.querySelectorAll('.hd');
+  [[1,0.2435,'global 0,24'],[2,0.391,'global 0,39']].forEach(([ci,v,s])=>{const hd=cols[ci];const r=document.createElement('div');r.className='ref';
+    r.style.left=(hd.offsetLeft+hd.offsetWidth*v*.82)+'px';r.style.top=(hd.offsetTop+hd.offsetHeight)+'px';r.innerHTML=`<span>${s}</span>`;b.appendChild(r);});}
+// Rótulos de borde y escala de avance en cada diapositiva
+const slides=[...document.querySelectorAll('.slide')];
+slides.forEach((s,k)=>{
+  s.insertAdjacentHTML('afterbegin','<div class="paper" aria-hidden="true"></div>');
+  const right=(s.dataset.right?s.dataset.right+'<span>·</span>':'')+`<span>Tramo ${s.dataset.time}</span><span class="rec"><i></i>Reg</span>`;
+  s.insertAdjacentHTML('beforeend',`<div class="edge-top" aria-hidden="true"><div class="perf"></div><div class="rh"><span>Inteligencia Artificial II · Segunda entrega</span><span class="r">${right}</span></div></div>`);
+  s.insertAdjacentHTML('beforeend','<div class="scale" aria-hidden="true" style="--n:'+slides.length+'">'+slides.map((o,j)=>`<span class="${j===k?'on':''}">${j===k?'<i class="mark"></i>':''}${o.dataset.short}</span>`).join('')+'</div>');
+});
+
+document.querySelectorAll('ul').forEach(u=>u.querySelectorAll('li>.mk').forEach((m,n)=>m.style.setProperty('--d',n*2+1)));
+const params=new URLSearchParams(location.search);
+const STATIC=params.has('print')||params.has('export');
+if(params.has('print')) document.body.classList.add('print');
+if(params.has('export')) document.querySelector('.nav').style.display='none';
+const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const video=document.getElementById('demo');
+if(STATIC){const im=new Image();im.src=video.poster;im.alt=video.getAttribute('aria-label');im.style.cssText='display:block;width:100%';video.replaceWith(im);}
+
+function countUp(s){s.querySelectorAll('[data-count]').forEach((e,n)=>{
+  const fin=e.dataset.fin||(e.dataset.fin=e.textContent);
+  const nums=[...fin.matchAll(/\d+(?:,\d+)?/g)].map(m=>m[0]);const t0=performance.now()+400+n*110,D=1100;
+  (function tick(now){const p=Math.min(1,Math.max(0,(now-t0)/D)),q=1-Math.pow(2,-10*p);let i=0;
+    e.textContent=fin.replace(/\d+(?:,\d+)?/g,()=>{const s=nums[i++],dec=(s.split(',')[1]||'').length;return (parseFloat(s.replace(',','.'))*q).toFixed(dec).replace('.',',');});
+    if(p<1)requestAnimationFrame(tick);else e.textContent=fin;})(performance.now());});}
+
+let penRaf;
+function drawCover(){
+  const p=cov.p,L=p.getTotalLength(),t0=performance.now()+250,D=2600;cancelAnimationFrame(penRaf);penT.classList.remove('idle');
+  p.style.strokeDasharray=L;
+  (function f(now){const u=Math.min(1,Math.max(0,(now-t0)/D)),q=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+    p.style.strokeDashoffset=L*(1-q);const pt=p.getPointAtLength(L*q);penG.setAttribute('transform',`translate(${pt.x},${pt.y})`);
+    if(u<1)penRaf=requestAnimationFrame(f);else{p.style.strokeDasharray='';p.style.strokeDashoffset='';penT.classList.add('idle');}})(performance.now());
+}
+
+let i=Math.max(0,Math.min(slides.length-1,(parseInt(location.hash.slice(1))||1)-1));
+function show(n){
+  i=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach((s,k)=>{const on=k===i;s.classList.toggle('active',on);if(!on)s.classList.remove('play','live');});
+  history.replaceState(null,'','#'+(i+1));
+  placeRefs();
+  const s=slides[i];
+  if(video.isConnected){if(s.contains(video)){video.currentTime=0;video.play().catch(()=>{});}else video.pause();}
+  if(STATIC)return;
+  s.classList.add('live');
+  if(REDUCED)return;
+  s.classList.remove('play');void s.offsetWidth;s.classList.add('play');
+  countUp(s);if(i===0)drawCover();
+}
+function fit(){if(document.body.classList.contains('print'))return;const k=Math.min(innerWidth/1280,innerHeight/720);document.getElementById('deck').style.transform=`translate(-50%,-50%) scale(${k})`;}
+addEventListener('resize',fit);
+addEventListener('keydown',e=>{
+  if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();show(i+1);}
+  else if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();show(i-1);}
+  else if(e.key==='Home')show(0); else if(e.key==='End')show(slides.length-1);
+  else if(e.key==='f'||e.key==='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}
+});
+addEventListener('click',e=>{if(e.clientX>innerWidth/2)show(i+1);else show(i-1);});
+document.fonts.ready.then(()=>{show(i);fit();if(document.body.classList.contains('print'))placeRefs();});fit();
+</script>
+</body>
+</html>
