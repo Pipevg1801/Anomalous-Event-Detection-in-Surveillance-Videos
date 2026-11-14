@@ -1,12 +1,12 @@
 {
-  "Frame AUC (standard UCF-Crime metric)": 0.6923257757629182,
-  "Video AUC (anomalous vs normal videos)": 0.9783333333333333,
-  "AUC inside anomalous videos (localization)": 0.5876556827732514,
-  "Mean IoU detected vs ground truth (anomalous videos)": 0.23689608434786996,
-  "Events detected (IoU >= 0.3)": 0.38461538461538464,
-  "Detected intervals that match an event (IoU >= 0.3)": 0.14527845036319612,
-  "Frame precision": 0.2731476502849769,
-  "Frame recall": 0.46863468634686345,
-  "Frame F1": 0.3451321421292207,
-  "Normal videos with a false alarm": 0.1
+  "Frame AUC (standard UCF-Crime metric)": 0.72538442644935,
+  "Video AUC (anomalous vs normal videos)": 0.9768571428571429,
+  "AUC inside anomalous videos (localization)": 0.5910641565164693,
+  "Mean IoU detected vs ground truth (anomalous videos)": 0.23958876478622335,
+  "Events detected (IoU >= 0.3)": 0.4358974358974359,
+  "Detected intervals that match an event (IoU >= 0.3)": 0.16625916870415647,
+  "Frame precision": 0.2695078031212485,
+  "Frame recall": 0.4970479704797048,
+  "Frame F1": 0.34950700570835497,
+  "Normal videos with a false alarm": 0.07333333333333333
 }
