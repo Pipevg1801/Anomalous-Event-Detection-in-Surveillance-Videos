@@ -1,0 +1,15 @@
+{
+  "threshold": 0.07,
+  "zoom_threshold": null,
+  "k_sigma": null,
+  "weights": "/mnt/af724231-956c-44f8-ae04-79cc6b3e18d2/IA_2_Dataset/trabajo/modelo_tf/modelo_tf_v2_pl.weights.h5",
+  "flags": {
+    "ARCH": "v2",
+    "USE_CLASS_BRANCH": true,
+    "PL_VERSION": 2,
+    "INFER": "multiscale",
+    "POST_VERSION": 2,
+    "SELECT_BY": "proxy",
+    "W_LOCAL_SUP": 0.5
+  }
+}
