@@ -99,6 +99,10 @@ table{border-collapse:collapse;width:100%;font-size:17.5px}
 th,td{padding:7px 8px;border-bottom:1px solid var(--sage);text-align:left}
 th{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--ink)}
 td.n,th.n{text-align:right}
+.cmp th{font-size:11px} .cmp td{font-size:16px;padding:6px 8px}
+.sm li{font-size:17px;margin-bottom:9px}
+.url{font-weight:700;color:var(--pen)}
+code{font-size:.9em;background:var(--paper-hi);padding:0 4px;border:1px solid var(--sage)}
 
 /* ---- cover ---- */
 .cover{padding:0}
@@ -174,123 +178,79 @@ td.n,th.n{text-align:right}
 
 <!-- 1 · Portada -->
 <section class="slide cover" data-short="Portada" data-right="Universidad Industrial de Santander" data-time="0:15">
-  <svg id="trace0" viewBox="0 0 1280 300" aria-label="Score de anomalía del video Burglary024 a lo largo de 120 segundos"></svg>
+  <svg id="trace0" viewBox="0 0 1280 300" aria-label="Score de anomalía del sistema final en el video Explosion022 a lo largo de 120 segundos"></svg>
   <h1 data-b style="--d:2">Detección de anomalías en videos de vigilancia</h1>
-  <p class="sub" data-b style="--d:3">Transformer temporal sobre features CLIP, entrenado con supervisión débil en UCF-Crime</p>
+  <p class="sub" data-b style="--d:3">VadCLIP preentrenado en TensorFlow + localización por IoU esperado, sobre UCF-Crime</p>
   <p class="team" data-b style="--d:4"><b>Integrantes</b>Felipe Vargas García · Santiago Florez Santamaría</p>
 </section>
 
-<!-- 2 · Introducción -->
-<section class="slide" data-short="Problema" data-time="1:00">
-  <h2 data-b>Hay demasiadas cámaras y muy pocos ojos para vigilarlas</h2>
+<!-- 2 · Objetivo -->
+<section class="slide" data-short="Objetivo" data-time="0:45">
+  <h2 data-b>Objetivo: detectar si un video de vigilancia contiene una anomalía y en qué intervalo ocurre</h2>
   <div class="cols c32">
-    <ul>
-      <li data-b style="--d:1">Las cámaras de seguridad graban todo el día, pero casi nadie revisa la grabación en tiempo real. Los incidentes se descubren tarde.</li>
-      <li data-b style="--d:2">Las anomalías (robos, peleas, explosiones, accidentes) son <strong>raras y cortas</strong>: unos segundos dentro de horas de video normal.</li>
-      <li data-b style="--d:3">Anotar en qué frame empieza y termina cada evento es muy costoso. Lo realista es saber solo si <strong>el video completo</strong> contiene una anomalía.</li>
-      <li data-b style="--d:4">Por eso planteamos el problema como <strong>aprendizaje débilmente supervisado</strong>: se entrena con etiquetas por video y se predice a nivel de fragmento.</li>
+    <ul class="sm">
+      <li data-b style="--d:1">Las cámaras graban todo el día y casi nadie revisa la grabación: los incidentes se descubren tarde.</li>
+      <li data-b style="--d:2">Las anomalías (robos, peleas, explosiones, accidentes) son <strong>raras y cortas</strong>: segundos dentro de minutos de video normal.</li>
+      <li data-b style="--d:3">Para entrenar solo se sabe si <strong>el video completo</strong> es anómalo (supervisión débil), pero queremos el <strong>intervalo</strong>: inicio y fin en segundos.</li>
+      <li data-b style="--d:4">Salida: un <strong>video anotado</strong> con el score, un borde rojo durante la anomalía y una línea de tiempo.</li>
     </ul>
     <figure>
-      <div class="plate" style="--d:1"><video id="demo" src="img/demo_salida.mp4" poster="img/demo_t20.png" muted loop playsinline preload="auto" aria-label="Video de salida del modelo sobre Burglary024"></video></div>
-      <figcaption class="cap">Burglary024 (UCF-Crime): video de salida del modelo, con el score y el intervalo detectado</figcaption>
+      <div class="plate" style="--d:1"><video id="demo" src="img/demo_salida_2.mp4" poster="img/demo_t20_2.png" muted loop playsinline preload="auto" aria-label="Video de salida del sistema final sobre Explosion022"></video></div>
+      <figcaption class="cap">Explosion022 (UCF-Crime): salida del sistema final, con el score y el intervalo detectado (IoU 1,0 con la anotación)</figcaption>
     </figure>
   </div>
 </section>
 
-<!-- 3 · Objetivo -->
-<section class="slide" data-short="Objetivo" data-time="0:45">
-  <h2 data-b>Decir si un video tiene una anomalía y en qué momento ocurre</h2>
-  <div class="cols c2">
+<!-- 3 · Dataset -->
+<section class="slide" data-short="Dataset" data-time="0:45">
+  <h2 data-b>Dataset: UCF-Crime, con las features CLIP que publica VadCLIP</h2>
+  <div class="cols" style="grid-template-columns:1fr 1.25fr;gap:40px">
     <div class="col" data-b style="--d:1">
-      <h3>Lo que esperamos lograr</h3>
-      <ul>
-        <li><strong>Detectar</strong> si un video contiene un evento anómalo (nivel video).</li>
-        <li><strong>Localizar</strong> el evento: intervalos de inicio y fin en segundos.</li>
-        <li>Entregar un <strong>video anotado</strong> con el score, un borde rojo durante la anomalía y una línea de tiempo.</li>
-      </ul>
-    </div>
-    <div class="col" data-b style="--d:2">
-      <h3>Alcance de esta entrega</h3>
-      <ul>
-        <li>Dataset UCF-Crime: 13 tipos de anomalía + videos normales.</li>
-        <li>Detección <strong>binaria</strong> (anómalo / normal); todavía no se clasifica el tipo de evento.</li>
-        <li>Procesamiento offline sobre features precalculadas; también funciona con videos propios.</li>
-      </ul>
-    </div>
-  </div>
-  <figure style="margin-top:6px">
-    <svg id="chart3" viewBox="0 0 1152 200" style="width:100%;height:200px;display:block" aria-label="Curva de anomalía de Burglary024"></svg>
-    <figcaption class="cap" style="margin-top:2px">Salida esperada para un video: score por fragmento, evento real (amarillo) e intervalo detectado (rojo)</figcaption>
-  </figure>
-</section>
-
-<!-- 4 · Pipeline -->
-<section class="slide" data-short="Método" data-time="1:45" style="padding:66px 64px 56px">
-  <h2 data-b>Del video crudo a los intervalos anómalos</h2>
-  <div class="plate" style="max-width:1152px"><img src="img/pipeline.png" alt="Diagrama del pipeline: extracción de features, modelo temporal, entrenamiento débilmente supervisado, post-procesamiento y video de salida"></div>
-</section>
-
-<!-- 5 · Por qué -->
-<section class="slide" data-short="Componentes" data-time="1:15">
-  <h2 data-b>Por qué elegimos cada componente</h2>
-  <div class="chan" data-b style="--d:1"><div class="lab">Canal 1 · Features</div><div><h3>CLIP ViT-B/16 congelado</h3>
-    <p>Da una representación semántica robusta de cada escena sin entrenar un backbone visual. Usamos las features precalculadas de VadCLIP (10 recortes por video), así entrenar es rápido.</p></div></div>
-  <div class="chan" data-b style="--d:2"><div class="lab">Canal 2 · Modelo</div><div><h3>Transformer temporal</h3>
-    <p>La atención compara cada fragmento con todo el video: una anomalía se reconoce por contraste con su contexto. Usamos solo 2 capas para no sobreajustar con ~1.400 videos.</p></div></div>
-  <div class="chan" data-b style="--d:3"><div class="lab">Canal 3 · Pérdida</div><div><h3>MIL top-k</h3>
-    <p>Solo sabemos si el video es anómalo. Si lo es, <em>algunos</em> fragmentos deben tener un score alto: el promedio de los k más altos se compara con la etiqueta del video.</p></div></div>
-  <div class="chan" data-b style="--d:4"><div class="lab">Canal 4 · Priors</div><div><h3>bottom-k · dispersión · suavidad</h3>
-    <p>Codifican lo que sabemos de las anomalías: parte del video anómalo es normal, los eventos son cortos y el score cambia de forma gradual.</p></div></div>
-  <p class="muted" data-b style="--d:5;font-size:17.5px;margin-top:16px">El post-procesamiento (EMA, histéresis, unión de huecos y duración mínima) convierte la curva de scores en intervalos legibles.</p>
-</section>
-
-<!-- 6 · Configuración experimental -->
-<section class="slide" data-short="Setup" data-time="1:00">
-  <h2 data-b>Dataset, métricas e hiperparámetros</h2>
-  <div class="cols" style="grid-template-columns:1.05fr 1.2fr 1fr;gap:30px">
-    <div class="col" data-b style="--d:1">
-      <h3>UCF-Crime · 1.900 videos</h3>
+      <h3>UCF-Crime · 1.900 videos · ≈ 128 h</h3>
       <table>
         <tr><th>Split</th><th class="n">Normal</th><th class="n">Anóm.</th><th class="n">Total</th></tr>
         <tr><td>Train</td><td class="n">680</td><td class="n">688</td><td class="n">1.368</td></tr>
         <tr><td>Val (15 %)</td><td class="n">120</td><td class="n">122</td><td class="n">242</td></tr>
         <tr><td>Test oficial</td><td class="n">150</td><td class="n">140</td><td class="n">290</td></tr>
       </table>
-      <p style="font-size:16.5px;margin-top:12px" class="muted">Video real de cámaras de seguridad, 13 clases de anomalía. Val estratificado por clase. Solo test tiene anotación temporal (inicio y fin del evento).</p>
+      <p style="font-size:16.5px;margin-top:12px" class="muted">Videos reales de cámaras de seguridad, sin recortar: 13 tipos de anomalía (robo, pelea, explosión, accidente de tránsito…) y videos normales. Para entrenar solo hay etiqueta por video; únicamente los 290 videos de test tienen anotación de inicio y fin. Val: 15 % de train, estratificado por clase.</p>
     </div>
     <div class="col" data-b style="--d:2">
-      <h3>Métricas y por qué</h3>
-      <ul>
-        <li style="font-size:17.5px;margin-bottom:8px"><strong>AUC por frame</strong>: métrica estándar de UCF-Crime; no depende del umbral.</li>
-        <li style="font-size:17.5px;margin-bottom:8px"><strong>AUC por video</strong>: mide si se detecta que el video tiene una anomalía.</li>
-        <li style="font-size:17.5px;margin-bottom:8px"><strong>AUC de localización</strong>: AUC dentro de los videos anómalos (¿sabe <em>cuándo</em>?).</li>
-        <li style="font-size:17.5px;margin-bottom:8px"><strong>IoU</strong> entre intervalos detectados y reales, y % de eventos con IoU ≥ 0,3.</li>
-        <li style="font-size:17.5px;margin-bottom:8px"><strong>Precisión / recall / F1</strong> y falsas alarmas en videos normales.</li>
+      <h3>Cómo descargarlo</h3>
+      <ul class="sm">
+        <li><strong>Features CLIP, listas y anotaciones:</strong> README de VadCLIP, fila «UCF-Crime», columna «CLIP» (OneDrive o Baidu) · <span class="url">github.com/nwpu-zxr/VadCLIP</span>. Un vector de 512 por cada 16 frames, 10 recortes por video.</li>
+        <li><strong>Pesos preentrenados de VadCLIP</strong> (<code>model_ucf.pth</code>, 649 MB): mismo README, columna «Model».</li>
+        <li><strong>Videos originales</strong> (≈ 100 GB, solo para la demo): <span class="url">crcv.ucf.edu/projects/real-world</span>.</li>
+        <li><strong>En el notebook:</strong> rutas en la celda 1.1 (<code>features</code>, <code>lists</code>, <code>vadclip_pth</code>). Si <code>lists</code> queda vacío, el repositorio de VadCLIP se clona solo.</li>
       </ul>
-    </div>
-    <div class="col" data-b style="--d:3">
-      <h3>Entrenamiento</h3>
-      <table style="font-size:16.5px">
-        <tr><td>Secuencia</td><td class="n">256 fragm.</td></tr>
-        <tr><td>Dim · capas · cabezas</td><td class="n">512 · 2 · 8</td></tr>
-        <tr><td>Optimizador</td><td class="n">AdamW</td></tr>
-        <tr><td>lr / weight decay</td><td class="n">2e-5 / 1e-2</td></tr>
-        <tr><td>Lote</td><td class="n">64 (4×16)</td></tr>
-        <tr><td>Épocas</td><td class="n">10</td></tr>
-        <tr><td>Umbral</td><td class="n">0,09 (F1 val)</td></tr>
-      </table>
-      <p style="font-size:15.5px;margin-top:10px" class="muted">Lotes balanceados 50/50 y un recorte aleatorio por video como aumento de datos.</p>
     </div>
   </div>
 </section>
 
-<!-- 7 · Resultados: entrenamiento + lecturas -->
-<section class="slide" data-short="Métricas" data-time="0:45">
-  <h2 data-b>Detecta muy bien <em>si</em> hay anomalía, pero no <em>cuándo</em></h2>
-  <div style="display:grid;grid-template-columns:560px 1fr;gap:28px;align-items:end;margin-bottom:12px">
-    <div class="plate"><img src="img/entrenamiento.png" alt="Curvas de pérdida de entrenamiento y AUC de validación por época"></div>
-    <p class="cap" data-b style="--d:2;font-size:15px;margin:0">Pérdidas de entrenamiento (izq.) y AUC por video en validación (der.) a lo largo de 10 épocas.</p>
-  </div>
+<!-- 4 · Mejor modelo -->
+<section class="slide" data-short="Modelo" data-time="1:30" style="padding:66px 64px 56px">
+  <h2 data-b>Mejor modelo: VadCLIP + IoU esperado</h2>
+  <div class="plate" style="max-width:1152px"><img src="img/pipeline_2.png" alt="Diagrama del pipeline final: features CLIP, VadCLIP preentrenado en TensorFlow con dos cabezas, decisión por umbral, localización por IoU esperado y video de salida"></div>
+</section>
+
+<!-- 5 · Componentes -->
+<section class="slide" data-short="Componentes" data-time="1:15">
+  <h2 data-b>Cómo funciona cada componente</h2>
+  <div class="chan" data-b style="--d:1"><div class="lab">Etapa A · Features</div><div><h3>CLIP ViT-B/16 congelado</h3>
+    <p>Cada fragmento de 16 frames se resume en un vector de 512 con el contenido semántico de la escena. Usamos las features precalculadas de VadCLIP (recorte 5, el de su evaluación).</p></div></div>
+  <div class="chan" data-b style="--d:2"><div class="lab">Etapa A · Contexto</div><div><h3>Transformer local + dos grafos</h3>
+    <p>La atención solo mira bloques de 8 fragmentos (≈ 4 s), así el contexto global no «pinta» todo el video. Un grafo une fragmentos parecidos (coseno &gt; 0,7); otro, los cercanos en el tiempo.</p></div></div>
+  <div class="chan" data-b style="--d:3"><div class="lab">Etapa A · Cabezas</div><div><h3>Binaria (p1) y texto-visual (p2)</h3>
+    <p>p1: clasificador sigmoide por fragmento. p2: similitud con 14 prompts de clase aprendidos, 1 − P(Normal). p1 decide <em>si</em> hay anomalía; el promedio de ambas, <em>dónde</em>.</p></div></div>
+  <div class="chan" data-b style="--d:4"><div class="lab">Etapa C · Localización</div><div><h3>IoU esperado en vez de umbral fijo</h3>
+    <p>El score queda alto en buena parte del video y un umbral fijo marca de más. Con p = 0,1 + 0,9·z¹² se marcan los k fragmentos que maximizan el IoU esperado: pico agudo → evento corto; meseta → largo.</p></div></div>
+  <p class="muted" data-b style="--d:5;font-size:16.5px;margin-top:14px">No reentrenamos VadCLIP: convertimos sus pesos oficiales de PyTorch a TensorFlow y verificamos la salida (AUC por frame 0,879 vs 0,880 del artículo).</p>
+</section>
+
+<!-- 6 · Entrega 2 -->
+<section class="slide" data-short="Entrega 2" data-time="0:30">
+  <h2 data-b>Punto de partida (Entrega 2): detectaba <em>si</em> había anomalía, pero no <em>cuándo</em></h2>
+  <p class="muted" data-b style="--d:1;font-size:17.5px;margin:-12px 0 16px">Transformer temporal propio (2 capas, 8 cabezas) entrenado con MIL top-k + priors, umbral fijo 0,09 calibrado en validación.</p>
   <div>
     <div class="rd" data-b style="--d:1"><div class="k">AUC por video (test)<small>separa videos anómalos y normales</small></div>
       <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:97.8%;--d:1"></span></div>
@@ -305,54 +265,138 @@ td.n,th.n{text-align:right}
       <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:100%"></span><span class="rf" style="left:50%"><span>azar</span></span><span class="v" style="width:58.9%;--d:4"></span></div>
       <div class="val"><span data-count>0,589</span><svg class="mk ko"><use href="#i-ko"/></svg></div></div>
     <div class="rd" data-b style="--d:5"><div class="k">IoU medio detectado vs real<small>39 % de eventos con IoU ≥ 0,3</small></div>
-      <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:24%;--d:5"></span></div>
-      <div class="val"><span data-count>0,24</span><svg class="mk ko"><use href="#i-ko"/></svg></div></div>
+      <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:24.4%;--d:5"></span></div>
+      <div class="val"><span data-count>0,244</span><svg class="mk ko"><use href="#i-ko"/></svg></div></div>
     <div class="rd" data-b style="--d:6"><div class="k">Precisión / recall por frame<small>intervalos demasiado anchos</small></div>
       <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:28%;--d:6"><i>P</i></span><span class="v" style="width:49%;--d:7"><i>R</i></span></div>
       <div class="val"><span data-count>0,28 / 0,49</span></div></div>
   </div>
 </section>
 
-<!-- 8 · Resultados por clase -->
-<section class="slide" data-short="Por clase" data-time="0:45">
-  <h2 data-b>La localización depende mucho del tipo de evento</h2>
-  <div class="cols" style="grid-template-columns:1.6fr 1fr;gap:34px">
-    <div class="bwrap" data-b style="--d:1" id="bars" aria-label="IoU medio y eventos detectados por clase"></div>
-    <div>
-      <p data-b style="--d:2;font-size:18px;margin-bottom:12px"><strong>Bien:</strong> Robbery (0,65), Arrest (0,46) y Burglary (0,41), eventos con una acción visible y acotada.</p>
-      <p data-b style="--d:3;font-size:18px;margin-bottom:12px"><strong>Mal:</strong> RoadAccidents, Explosion y Shoplifting (≈ 0,15), cada una con más de 20 videos de test.</p>
-      <p data-b style="--d:4;font-size:16px;margin-bottom:16px" class="muted">Hipótesis: los accidentes y explosiones duran instantes pero sus efectos (humo, gente reunida) siguen en escena; el hurto en tiendas es sutil. Abuse solo tiene 2 videos de test, no es concluyente.</p>
-      <div class="note" data-b style="--d:5">El entrenamiento converge en la época 5–6 (AUC val 0,986). El cuello de botella no es la detección sino la <strong>precisión temporal</strong> del score.</div>
+<!-- 7 · Cambios de la Entrega 3 -->
+<section class="slide" data-short="Cambios" data-time="1:00">
+  <h2 data-b>Qué cambiamos en la tercera entrega</h2>
+  <div class="cols" style="grid-template-columns:1.3fr 1fr;gap:40px;align-items:start">
+    <ul>
+      <li class="nx" data-b style="--d:1;font-size:17.5px"><svg class="mk nx"><use href="#i-nx"/></svg><strong>Modelo propio mejorado:</strong> convolución temporal antes del Transformer y nuevas pérdidas (contraste, fragmentos normales). Sube el AUC por frame, no el IoU.</li>
+      <li class="ko" data-b style="--d:2;font-size:17.5px"><svg class="mk ko"><use href="#i-ko"/></svg><strong>Arquitectura v2:</strong> atención local-global, rama de clases y pseudo-etiquetas. Más compleja y sin ganancia en IoU.</li>
+      <li class="ko" data-b style="--d:3;font-size:17.5px"><svg class="mk ko"><use href="#i-ko"/></svg><strong>Error encontrado:</strong> Keras cargaba los pesos omitiendo en silencio la capa convolucional (29 % de falsas alarmas). Corregido; el notebook ahora verifica la carga.</li>
+      <li class="ok" data-b style="--d:4;font-size:17.5px"><svg class="mk ok"><use href="#i-ok"/></svg><strong>VadCLIP preentrenado</strong> (AAAI 2024) portado a TensorFlow, sin reentrenar.</li>
+      <li class="ok" data-b style="--d:5;font-size:17.5px"><svg class="mk ok"><use href="#i-ok"/></svg><strong>Localización por IoU esperado</strong>, con parámetros elegidos por validación cruzada.</li>
+    </ul>
+    <div data-b style="--d:2">
+      <table class="cmp">
+        <tr><th>Versión</th><th class="n">AUC frame</th><th class="n">IoU</th></tr>
+        <tr><td>Entrega 2</td><td class="n">0,694</td><td class="n">0,244</td></tr>
+        <tr><td>Modelo propio (E3)</td><td class="n">0,840</td><td class="n">0,212</td></tr>
+        <tr><td>Arquitectura v2</td><td class="n">0,849</td><td class="n">0,231</td></tr>
+        <tr><td>VadCLIP + umbral fijo</td><td class="n">0,879*</td><td class="n">0,218</td></tr>
+        <tr><td><strong>VadCLIP + IoU esperado</strong></td><td class="n"><strong>0,874</strong></td><td class="n"><strong>0,245</strong></td></tr>
+      </table>
+      <p class="cap">* AUC del score crudo de VadCLIP. El IoU del sistema final es de validación cruzada (5-fold) sobre test.</p>
     </div>
   </div>
 </section>
 
-<!-- 9 · Ejemplos -->
+<!-- 8 · Resultados de la Entrega 3 -->
+<section class="slide" data-short="Entrega 3" data-time="1:00">
+  <h2 data-b>Resultados: el score mejoró mucho; el IoU, poco</h2>
+  <div class="cols" style="grid-template-columns:1.8fr 1fr;gap:30px;align-items:start">
+    <div data-b style="--d:1">
+      <table class="cmp">
+        <tr><th>Métrica (test, 290 videos)</th><th class="n">Entrega 2</th><th class="n">Propio E3</th><th class="n">VadCLIP + IoU esp.</th></tr>
+        <tr><td>AUC por frame</td><td class="n">0,694</td><td class="n">0,840</td><td class="n"><strong>0,874</strong></td></tr>
+        <tr><td>AUC por video</td><td class="n"><strong>0,978</strong></td><td class="n">0,964</td><td class="n">0,971</td></tr>
+        <tr><td>AUC de localización</td><td class="n">0,589</td><td class="n">0,609</td><td class="n"><strong>0,687</strong></td></tr>
+        <tr><td>IoU medio (videos anómalos)</td><td class="n">0,244</td><td class="n">0,212</td><td class="n"><strong>0,245</strong></td></tr>
+        <tr><td>Eventos detectados (IoU ≥ 0,3)</td><td class="n">39,1 %</td><td class="n">37,8 %</td><td class="n"><strong>41,7 %</strong></td></tr>
+        <tr><td>Intervalos que coinciden con un evento</td><td class="n">14,7 %</td><td class="n">18,0 %</td><td class="n"><strong>23,0 %</strong></td></tr>
+        <tr><td>Precisión / recall por frame</td><td class="n"><strong>0,276</strong> / 0,488</td><td class="n">0,240 / 0,674</td><td class="n">0,169 / <strong>0,727</strong></td></tr>
+        <tr><td>F1 por frame</td><td class="n">0,352</td><td class="n"><strong>0,354</strong></td><td class="n">0,274</td></tr>
+        <tr><td>Falsas alarmas (videos normales)</td><td class="n">10,0 %</td><td class="n">8,0 %</td><td class="n"><strong>6,7 %</strong></td></tr>
+      </table>
+      <p class="cap">Mismo test oficial y mismas métricas en las tres columnas. En negrita, el mejor valor de cada fila.</p>
+    </div>
+    <figure data-b style="--d:2"><div class="plate"><img src="img/roc_frame_2.png" alt="Curva ROC por frame del sistema final"></div><figcaption class="cap">Curva ROC por frame del sistema final (AUC 0,874)</figcaption></figure>
+  </div>
+</section>
+
+<!-- 9 · Resultados por clase -->
+<section class="slide" data-short="Por clase" data-time="0:45">
+  <h2 data-b>La localización sigue dependiendo del tipo de evento</h2>
+  <div class="cols" style="grid-template-columns:1.6fr 1fr;gap:34px">
+    <div class="bwrap" data-b style="--d:1" id="bars" aria-label="IoU medio y eventos detectados por clase"></div>
+    <div>
+      <p data-b style="--d:2;font-size:18px;margin-bottom:12px"><strong>Bien:</strong> Stealing (0,52), Robbery (0,45) y Fighting (0,41), eventos con una acción visible y acotada.</p>
+      <p data-b style="--d:3;font-size:18px;margin-bottom:12px"><strong>Mal:</strong> RoadAccidents y Shoplifting (≈ 0,11), cada una con más de 20 videos de test.</p>
+      <p data-b style="--d:4;font-size:16px;margin-bottom:16px" class="muted">Hipótesis: los accidentes duran instantes pero sus efectos siguen en escena; el hurto en tiendas es sutil. Abuse solo tiene 2 videos de test, no es concluyente.</p>
+      <div class="note" data-b style="--d:5">Frente a la Entrega 2 mejoran Stealing (0,30 → 0,52), Arson (0,29 → 0,39) y Explosion (0,15 → 0,23); empeoran Robbery (0,65 → 0,45) y RoadAccidents (0,15 → 0,11).</div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Ejemplos -->
 <section class="slide" data-short="Ejemplos" data-time="0:30">
   <h2 data-b>Ejemplos: los mejores y los peores casos</h2>
   <div class="cols" style="grid-template-columns:400px 1fr;gap:36px">
-    <div class="plate" style="height:494px"><img src="img/curvas_test.png" alt="Curvas de anomalía de seis videos de test" style="height:474px;width:auto;margin:0 auto"></div>
+    <div class="plate" style="height:494px"><img src="img/curvas_test_2.png" alt="Curvas de anomalía de seis videos de test con el sistema final" style="height:474px;width:auto;margin:0 auto"></div>
     <div>
-      <p data-b style="--d:1;font-size:16.5px;margin-bottom:14px"><span class="sw" style="background:#ffe9a6"></span>evento real &nbsp; <span class="sw" style="background:#f4a3a3"></span>detectado &nbsp; <span class="sw" style="height:0;border:0;border-top:2px dashed #888;vertical-align:3px"></span>umbral</p>
+      <p data-b style="--d:1;font-size:16.5px;margin-bottom:14px"><span class="sw" style="background:#ffe9a6"></span>evento real &nbsp; <span class="sw" style="background:#f4a3a3"></span>detectado</p>
       <ul>
-        <li class="ok" data-b style="--d:2;font-size:18px"><svg class="mk ok"><use href="#i-ok"/></svg>Arriba: Burglary, Arson y Robbery con IoU 0,89–0,96.</li>
-        <li class="ko" data-b style="--d:3;font-size:18px"><svg class="mk ko"><use href="#i-ko"/></svg>Abajo: tres Shoplifting con IoU 0. El modelo reacciona a otros momentos o no reacciona.</li>
-        <li class="nx" data-b style="--d:4;font-size:18px"><svg class="mk nx"><use href="#i-nx"/></svg>Umbral bajo (0,09) + unión de huecos de 5 s ⇒ intervalos anchos.</li>
+        <li class="ok" data-b style="--d:2;font-size:17.5px"><svg class="mk ok"><use href="#i-ok"/></svg>Arriba: Explosion022, Arson016 y Robbery137 con IoU 0,90–1,00.</li>
+        <li class="ko" data-b style="--d:3;font-size:17.5px"><svg class="mk ko"><use href="#i-ko"/></svg>Abajo: tres Shoplifting con IoU 0. En 049 el score queda alto todo el video; 037 y 039 no superan el umbral y no se marcan.</li>
+        <li class="nx" data-b style="--d:4;font-size:17.5px"><svg class="mk nx"><use href="#i-nx"/></svg>Burglary024, el mejor caso de la Entrega 2 (IoU 0,96), cae a 0,09: VadCLIP lo puntúa sobre 0,8 en todo el video.</li>
       </ul>
       <div class="cols c2" style="gap:16px;margin-top:14px">
-        <figure><div class="plate" style="--d:3"><img src="img/demo_t20.png" alt="Frame anómalo"></div><figcaption class="cap">t = 20 s · anomalía</figcaption></figure>
-        <figure><div class="plate" style="--d:4"><img src="img/demo_t90.png" alt="Frame normal"></div><figcaption class="cap">t = 90 s · normal</figcaption></figure>
+        <figure><div class="plate" style="--d:3"><img src="img/demo_t20_2.png" alt="Frame anómalo de Explosion022"></div><figcaption class="cap">Explosion022 · t = 77 s · anomalía</figcaption></figure>
+        <figure><div class="plate" style="--d:4"><img src="img/demo_t90_2.png" alt="Frame normal de Explosion022"></div><figcaption class="cap">Explosion022 · t = 30 s · normal</figcaption></figure>
       </div>
     </div>
   </div>
 </section>
 
+<!-- 11 · Análisis y conclusiones -->
+<section class="slide" data-short="Conclusiones" data-time="1:15">
+  <h2 data-b>Análisis de resultados y conclusiones</h2>
+  <div class="cols c2">
+    <div class="col" data-b style="--d:1">
+      <h3>Qué interpretamos</h3>
+      <ul class="sm">
+        <li>El preentrenamiento de VadCLIP ordena mucho mejor los fragmentos: AUC por frame <strong>0,69 → 0,87</strong> y de localización <strong>0,59 → 0,69</strong>.</li>
+        <li>Pero el IoU casi no se mueve (<strong>≈ 0,24</strong>): el problema es decidir <em>cuánto</em> marcar. El score de VadCLIP supera 0,5 en ~75 % de cada video anómalo; el evento real cubre el 22 %.</li>
+        <li>Referencias: marcar todo el video ya da IoU 0,217; con el umbral ideal por video, el mismo score llegaría a 0,43. La brecha está en la extensión, no en el orden.</li>
+        <li>El IoU esperado ajusta mejor la extensión (0,218 → 0,245), a cambio de precisión: marca más frames.</li>
+      </ul>
+    </div>
+    <div class="col" data-b style="--d:2">
+      <h3>Conclusiones</h3>
+      <ul class="sm">
+        <li><strong>Detectar</strong> si un video es anómalo funciona: AUC por video 0,97 y 6,7 % de falsas alarmas.</li>
+        <li><strong>Localizar</strong> con solo etiquetas por video sigue abierto: IoU ≈ 0,21–0,25 en todas las versiones.</li>
+        <li>Siguiente paso: estimar la duración del evento, por ejemplo entrenando nuestro modelo con las curvas de VadCLIP como pseudo-etiquetas.</li>
+        <li>Lección: verificar la carga de pesos y medir sin fuga de etiquetas.</li>
+      </ul>
+      <div class="note" data-b style="--d:3;font-size:16px;margin-top:6px">Val no tiene anotación temporal, así que los parámetros de localización se eligieron con validación cruzada sobre test: ningún video se evalúa con parámetros ajustados con sus propias etiquetas.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · Notebook -->
+<section class="slide" data-short="Notebook" data-time="0:30">
+  <h2 data-b>Notebook: deteccion_anomalias_tf.ipynb</h2>
+  <div class="cols c2" style="gap:24px">
+    <figure data-b style="--d:1"><div class="plate"><img src="img/nb_vista1_2.png" alt="Celda 3.4 del notebook: VadCLIP portado a TensorFlow"></div><figcaption class="cap">3.4 · VadCLIP en TensorFlow: convierte una vez los pesos oficiales y define la red con operaciones de TF.</figcaption></figure>
+    <figure data-b style="--d:2"><div class="plate"><img src="img/nb_vista2_2.png" alt="Celda 4.2 del notebook: métricas de test del modelo propio y del sistema final"></div><figcaption class="cap">4.2 · Métricas de test: modelo propio vs VadCLIP + IoU esperado (validación cruzada 5-fold).</figcaption></figure>
+  </div>
+  <p class="muted" data-b style="--d:3;font-size:17px;margin-top:16px">Para ejecutarlo: rutas y modo en la celda 1.1 → <em>Run All</em> → en la celda 5.2 se elige un video y se genera el MP4 anotado. Funciona en local o en Colab.</p>
+</section>
+
 </div>
 <div class="nav">← → para navegar · F pantalla completa</div>
 <script>
-// Score suavizado real de Burglary024 (digitalizado de img/demo_curva.png), un punto cada 0,5 s, 0–120 s.
-const SCORE=[0.011,0.018,0.032,0.056,0.116,0.208,0.581,0.775,0.842,0.792,0.771,0.877,0.852,0.757,0.479,0.324,0.363,0.641,0.806,0.873,0.898,0.866,0.778,0.521,0.236,0.155,0.085,0.07,0.092,0.141,0.331,0.623,0.627,0.349,0.363,0.394,0.342,0.592,0.778,0.718,0.718,0.757,0.542,0.349,0.327,0.158,0.155,0.236,0.08,0.056,0.049,0.067,0.137,0.194,0.553,0.581,0.697,0.81,0.785,0.63,0.32,0.387,0.669,0.588,0.306,0.162,0.077,0.06,0.06,0.092,0.173,0.408,0.595,0.426,0.137,0.074,0.039,0.028,0.021,0.025,0.046,0.089,0.225,0.106,0.042,0.025,0.011,0.007,0.007,0.007,0.007,0,0,0,0,0,0,0,0,0,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0,0,0,0,0,0,0.007,0.007,0,0,0.007,0,0,0,0,0,0.007,0,0,0,0,0.007,0.007,0,0,0,0.007,0.007,0,0,0,0,0,0,0,0,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0,0,0,0,0,0,0,0,0,0,0,0,0.007,0.007,0.007,0.007,0.007,0.007,0.007,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.007,0,0,0,0.007,0.007,0,0,0,0.007,0.007,0.007,0.011,0.011,0.007,0.007,0,0,0,0,0.007,0.007,0.007,0.007,0.007,0.007,0,0,0,0,0,0.007,0.007,0.007,0,0.007,0.007,0,0,0,0,0,0.007,0.007,0.007,0.011,0.011,0.007,0,0];
-const TRUTH=[1.9,41.1], DET=[2.3,41.8], THR=0.09;
+// Score de localización suavizado del sistema final para Explosion022 (calculado con el notebook), un punto cada 0,5 s, 0–120 s.
+const SCORE=[0.127,0.127,0.118,0.111,0.105,0.101,0.098,0.096,0.096,0.096,0.095,0.094,0.092,0.089,0.086,0.083,0.08,0.08,0.078,0.076,0.075,0.075,0.075,0.074,0.074,0.073,0.072,0.07,0.068,0.066,0.064,0.062,0.061,0.061,0.06,0.06,0.06,0.061,0.061,0.062,0.064,0.065,0.066,0.067,0.068,0.069,0.069,0.07,0.07,0.07,0.07,0.07,0.069,0.069,0.069,0.068,0.068,0.068,0.067,0.067,0.066,0.066,0.065,0.066,0.066,0.066,0.067,0.067,0.068,0.069,0.071,0.072,0.074,0.076,0.078,0.08,0.082,0.086,0.089,0.093,0.098,0.098,0.103,0.109,0.116,0.122,0.129,0.135,0.141,0.146,0.149,0.151,0.153,0.152,0.151,0.148,0.143,0.143,0.136,0.127,0.116,0.105,0.095,0.085,0.077,0.071,0.066,0.062,0.059,0.056,0.055,0.053,0.052,0.052,0.051,0.05,0.049,0.048,0.047,0.046,0.045,0.045,0.045,0.045,0.046,0.047,0.049,0.052,0.056,0.056,0.061,0.067,0.074,0.082,0.092,0.105,0.122,0.142,0.168,0.2,0.24,0.29,0.353,0.434,0.532,0.532,0.636,0.726,0.798,0.854,0.894,0.922,0.941,0.953,0.959,0.96,0.956,0.947,0.932,0.908,0.873,0.873,0.82,0.738,0.624,0.507,0.408,0.331,0.271,0.227,0.194,0.169,0.153,0.141,0.134,0.13,0.129,0.129,0.13,0.133,0.136,0.14,0.143,0.145,0.148,0.151,0.155,0.161,0.169,0.18,0.196,0.218,0.247,0.247,0.282,0.325,0.374,0.425,0.468,0.494,0.498,0.48,0.443,0.392,0.332,0.276,0.228,0.189,0.157,0.157,0.132,0.112,0.096,0.084,0.076,0.069,0.064,0.061,0.058,0.056,0.054,0.053,0.053,0.052,0.051,0.051,0.05,0.05,0.049,0.048,0.047,0.046,0.046,0.045,0.045,0.045,0.047,0.049,0.053];
+const TRUTH=[74.3,80.7], DET=[74.1,81.1], THR=null;  // el sistema final no usa un umbral fijo por frame
 const NS='http://www.w3.org/2000/svg';
 const el=(tag,attrs,parent)=>{const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);parent&&parent.appendChild(e);return e;};
 const fmt=v=>String(v).replace('.',',');
@@ -360,7 +404,7 @@ const fmt=v=>String(v).replace('.',',');
 function plotScore(svg,{x0,x1,y0,y1,axis,labels}){
   const X=t=>x0+(x1-x0)*t/120, Y=v=>y0-(y0-y1)*v;
   el('rect',{x:X(TRUTH[0]),y:y1-12,width:X(TRUTH[1])-X(TRUTH[0]),height:y0-y1+12,fill:'var(--truth)'},svg);
-  el('line',{x1:x0,x2:x1,y1:Y(THR),y2:Y(THR),stroke:'#53625a','stroke-width':1.5,'stroke-dasharray':'6 5'},svg);
+  if(THR!=null)el('line',{x1:x0,x2:x1,y1:Y(THR),y2:Y(THR),stroke:'#53625a','stroke-width':1.5,'stroke-dasharray':'6 5'},svg);
   el('line',{x1:x0,x2:x1,y1:y0,y2:y0,stroke:'#1d2a24','stroke-width':1.5},svg);
   for(let t=0;t<=120;t+=20){el('line',{x1:X(t),x2:X(t),y1:y0,y2:y0+7,stroke:'#1d2a24','stroke-width':1.5},svg);
     const tx=el('text',{x:X(t),y:y0+22,'text-anchor':'middle',class:'tl',fill:'#53625a'},svg);tx.textContent=t+' s';}
@@ -373,20 +417,16 @@ function plotScore(svg,{x0,x1,y0,y1,axis,labels}){
 }
 // Portada: el registrador dibuja el score real
 const cov=plotScore(document.getElementById('trace0'),{x0:64,x1:1216,y0:258,y1:52,labels:[
-  [80,32,'Evento real (anotación)','start','#765a00'],[1216,32,'Burglary024 · score de anomalía','end','#c8281e'],[478,234,'umbral 0,09','start','#53625a']]});
+  [769,32,'Evento real (anotación)','end','#765a00'],[1216,32,'Explosion022 · score de anomalía','end','#c8281e']]});
 const penG=el('g',{},document.getElementById('trace0'));
 const penT=el('g',{class:'trem'},penG);
 el('line',{x1:0,y1:0,x2:30,y2:-46,stroke:'#1d2a24','stroke-width':3,'stroke-linecap':'round'},penT);
 el('circle',{r:5,fill:'#c8281e',stroke:'#1d2a24','stroke-width':1.5},penT);
 const covEnd=cov.p.getPointAtLength(cov.p.getTotalLength());penG.setAttribute('transform',`translate(${covEnd.x},${covEnd.y})`);
 
-// Diapositiva 3: curva completa con ejes
-plotScore(document.getElementById('chart3'),{x0:44,x1:1118,y0:160,y1:24,axis:true,labels:[
-  [1140,12,'score suavizado · Burglary024','end','#c8281e']]}).p.setAttribute('class','draw');
-document.querySelector('#chart3 path.draw').setAttribute('pathLength','1');document.querySelector('#chart3 path.draw').style.setProperty('--d','3');
 
-// Diapositiva 8: IoU y eventos detectados por clase (datos de scripts/charts.py)
-const CL=[["Robbery",5,0.647,4,5,"ok"],["Arrest",5,0.464,4,5,"ok"],["Burglary",13,0.410,9,15,"ok"],["Fighting",5,0.374,3,5],["Assault",3,0.334,3,4],["Stealing",5,0.302,3,7],["Arson",9,0.288,3,10],["Shooting",23,0.225,13,25],["Vandalism",5,0.208,3,8],["Shoplifting",21,0.164,5,25,"ko"],["Explosion",21,0.148,5,22,"ko"],["RoadAccidents",23,0.146,6,23,"ko"],["Abuse",2,0.060,0,2]];
+// IoU y eventos detectados por clase del sistema final (trabajo/modelo_tf/resultados_test.csv)
+const CL=[["Stealing",5,0.518,6,7,"ok"],["Robbery",5,0.451,4,5,"ok"],["Fighting",5,0.415,5,5,"ok"],["Arson",9,0.387,6,10],["Arrest",5,0.386,4,5],["Burglary",13,0.349,7,15],["Vandalism",5,0.326,4,8],["Assault",3,0.294,2,4],["Explosion",21,0.232,8,22],["Shooting",23,0.223,11,25],["Shoplifting",21,0.110,5,25,"ko"],["RoadAccidents",23,0.105,3,23,"ko"],["Abuse",2,0.099,0,2]];
 (function(){const b=document.getElementById('bars');
   let h='<div class="bars"><div class="hd">Clase (n test)</div><div class="hd">IoU medio por clase</div><div class="hd">Eventos detectados (IoU ≥ 0,3)</div>';
   CL.forEach((c,i)=>{const det=c[3]/c[4];
@@ -398,14 +438,14 @@ const CL=[["Robbery",5,0.647,4,5,"ok"],["Arrest",5,0.464,4,5,"ok"],["Burglary",1
 
 function placeRefs(){const b=document.getElementById('bars');if(!b.offsetWidth||b.querySelector('.ref'))return;
   const cols=b.querySelectorAll('.hd');
-  [[1,0.2435,'global 0,24'],[2,0.391,'global 0,39']].forEach(([ci,v,s])=>{const hd=cols[ci];const r=document.createElement('div');r.className='ref';
+  [[1,0.245,'global 0,245'],[2,0.417,'global 0,42']].forEach(([ci,v,s])=>{const hd=cols[ci];const r=document.createElement('div');r.className='ref';
     r.style.left=(hd.offsetLeft+hd.offsetWidth*v*.82)+'px';r.style.top=(hd.offsetTop+hd.offsetHeight)+'px';r.innerHTML=`<span>${s}</span>`;b.appendChild(r);});}
 // Rótulos de borde y escala de avance en cada diapositiva
 const slides=[...document.querySelectorAll('.slide')];
 slides.forEach((s,k)=>{
   s.insertAdjacentHTML('afterbegin','<div class="paper" aria-hidden="true"></div>');
   const right=(s.dataset.right?s.dataset.right+'<span>·</span>':'')+`<span>Tramo ${s.dataset.time}</span><span class="rec"><i></i>Reg</span>`;
-  s.insertAdjacentHTML('beforeend',`<div class="edge-top" aria-hidden="true"><div class="perf"></div><div class="rh"><span>Inteligencia Artificial II · Segunda entrega</span><span class="r">${right}</span></div></div>`);
+  s.insertAdjacentHTML('beforeend',`<div class="edge-top" aria-hidden="true"><div class="perf"></div><div class="rh"><span>Inteligencia Artificial II · Tercera entrega</span><span class="r">${right}</span></div></div>`);
   s.insertAdjacentHTML('beforeend','<div class="scale" aria-hidden="true" style="--n:'+slides.length+'">'+slides.map((o,j)=>`<span class="${j===k?'on':''}">${j===k?'<i class="mark"></i>':''}${o.dataset.short}</span>`).join('')+'</div>');
 });
 
