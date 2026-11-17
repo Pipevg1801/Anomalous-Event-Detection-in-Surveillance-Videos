@@ -47,7 +47,7 @@ body.print .nav{display:none}
 .slide.live .rec i{animation:blink 2.4s steps(2,jump-none) infinite}
 @keyframes blink{50%{opacity:.25}}
 .scale{position:absolute!important;left:0;right:0;bottom:0;height:42px;border-top:1px solid var(--sage);background:var(--paper-hi);display:grid;grid-template-columns:repeat(var(--n,9),1fr);padding:0 48px}
-.scale span{position:relative;font-weight:600;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:15px 0 0 7px;white-space:nowrap;overflow:hidden;border-left:1px solid var(--sage-ink)}
+.scale span{position:relative;font-weight:600;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:15px 0 0 7px;white-space:nowrap;overflow:hidden;border-left:1px solid var(--sage-ink)}
 .scale span::before{content:"";position:absolute;left:-1px;top:0;height:7px;border-left:1px solid var(--ink)}
 .scale span.on{color:var(--ink);font-weight:800}
 .scale .mark{position:absolute;top:-1px;left:-6px;width:12px;height:9px;background:var(--pen);clip-path:polygon(0 0,100% 0,50% 100%)}
@@ -102,6 +102,23 @@ td.n,th.n{text-align:right}
 .cmp th{font-size:11px} .cmp td{font-size:16px;padding:6px 8px}
 .sm li{font-size:17px;margin-bottom:9px}
 .url{font-weight:700;color:var(--pen)}
+.gb .lg{display:flex;gap:18px;font-size:13.5px;color:var(--ink-2);margin-bottom:8px;flex-wrap:wrap}
+.gb .lg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.gb .gr{display:grid;grid-template-columns:205px 1fr;align-items:center;column-gap:14px;padding:5px 0;border-top:1px solid var(--sage)}
+.gb .gr:last-child{border-bottom:1px solid var(--sage)}
+.gb .m{font-size:14.5px;font-weight:650;line-height:1.2}
+.gb .gbar{display:flex;align-items:center;gap:6px;height:12px;margin:2px 0}
+.gb .b{height:9px;border-radius:0 4px 4px 0;transform-origin:left}
+.gb .gbar span{font-size:12px;font-weight:650;color:var(--ink);white-space:nowrap}
+#techo .gr{grid-template-columns:190px 1fr;padding:8px 0}
+#techo .gbar{height:22px} #techo .b{height:16px;background:var(--ink)} #techo .b.fin{background:var(--pen)}
+#techo .b.ref{background:#7c8a80} #techo .b.ora{background:#b9c4bb} #techo .gbar span{font-size:13.5px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:0 0 22px}
+.tile{background:var(--paper-hi);border:1px solid var(--sage);padding:12px 16px 14px}
+.tile .l{font-size:13.5px;font-weight:650;color:var(--muted)}
+.tile .v{font-size:40px;font-weight:800;font-stretch:80%;line-height:1.1;font-variant-numeric:normal}
+.tile .d{font-size:13.5px;font-weight:700}
+.tile .d.up{color:var(--ok)} .tile .d.eq{color:var(--muted)}
 code{font-size:.9em;background:var(--paper-hi);padding:0 4px;border:1px solid var(--sage)}
 
 /* ---- cover ---- */
@@ -185,43 +202,41 @@ code{font-size:.9em;background:var(--paper-hi);padding:0 4px;border:1px solid va
 </section>
 
 <!-- 2 · Objetivo -->
-<section class="slide" data-short="Objetivo" data-time="0:45">
-  <h2 data-b>Objetivo: detectar si un video de vigilancia contiene una anomalía y en qué intervalo ocurre</h2>
+<section class="slide" data-short="Objetivo" data-time="0:40">
+  <h2 data-b>Objetivo: detectar si un video contiene una anomalía y en qué intervalo ocurre</h2>
   <div class="cols c32">
-    <ul class="sm">
-      <li data-b style="--d:1">Las cámaras graban todo el día y casi nadie revisa la grabación: los incidentes se descubren tarde.</li>
-      <li data-b style="--d:2">Las anomalías (robos, peleas, explosiones, accidentes) son <strong>raras y cortas</strong>: segundos dentro de minutos de video normal.</li>
-      <li data-b style="--d:3">Para entrenar solo se sabe si <strong>el video completo</strong> es anómalo (supervisión débil), pero queremos el <strong>intervalo</strong>: inicio y fin en segundos.</li>
-      <li data-b style="--d:4">Salida: un <strong>video anotado</strong> con el score, un borde rojo durante la anomalía y una línea de tiempo.</li>
+    <ul>
+      <li data-b style="--d:1">Las anomalías son <strong>raras y cortas</strong>: segundos dentro de minutos de video.</li>
+      <li data-b style="--d:2">Solo hay etiqueta por video (<strong>supervisión débil</strong>), pero buscamos el intervalo.</li>
+      <li data-b style="--d:3">Salida: <strong>video anotado</strong> con score, borde rojo y línea de tiempo.</li>
     </ul>
     <figure>
       <div class="plate" style="--d:1"><video id="demo" src="img/demo_salida_2.mp4" poster="img/demo_t20_2.png" muted loop playsinline preload="auto" aria-label="Video de salida del sistema final sobre Explosion022"></video></div>
-      <figcaption class="cap">Explosion022 (UCF-Crime): salida del sistema final, con el score y el intervalo detectado (IoU 1,0 con la anotación)</figcaption>
+      <figcaption class="cap">Explosion022: salida del sistema final (IoU 1,0)</figcaption>
     </figure>
   </div>
 </section>
 
 <!-- 3 · Dataset -->
-<section class="slide" data-short="Dataset" data-time="0:45">
-  <h2 data-b>Dataset: UCF-Crime, con las features CLIP que publica VadCLIP</h2>
-  <div class="cols" style="grid-template-columns:1fr 1.25fr;gap:40px">
+<section class="slide" data-short="Dataset" data-time="0:40">
+  <h2 data-b>Dataset: UCF-Crime con features CLIP de VadCLIP</h2>
+  <div class="cols" style="grid-template-columns:1fr 1.1fr;gap:44px">
     <div class="col" data-b style="--d:1">
-      <h3>UCF-Crime · 1.900 videos · ≈ 128 h</h3>
+      <h3>1.900 videos · ≈ 128 h · 13 anomalías</h3>
       <table>
         <tr><th>Split</th><th class="n">Normal</th><th class="n">Anóm.</th><th class="n">Total</th></tr>
         <tr><td>Train</td><td class="n">680</td><td class="n">688</td><td class="n">1.368</td></tr>
         <tr><td>Val (15 %)</td><td class="n">120</td><td class="n">122</td><td class="n">242</td></tr>
         <tr><td>Test oficial</td><td class="n">150</td><td class="n">140</td><td class="n">290</td></tr>
       </table>
-      <p style="font-size:16.5px;margin-top:12px" class="muted">Videos reales de cámaras de seguridad, sin recortar: 13 tipos de anomalía (robo, pelea, explosión, accidente de tránsito…) y videos normales. Para entrenar solo hay etiqueta por video; únicamente los 290 videos de test tienen anotación de inicio y fin. Val: 15 % de train, estratificado por clase.</p>
+      <p style="font-size:16.5px;margin-top:12px" class="muted">Cámaras de seguridad reales. Solo test tiene inicio y fin anotados.</p>
     </div>
     <div class="col" data-b style="--d:2">
-      <h3>Cómo descargarlo</h3>
+      <h3>Descarga</h3>
       <ul class="sm">
-        <li><strong>Features CLIP, listas y anotaciones:</strong> README de VadCLIP, fila «UCF-Crime», columna «CLIP» (OneDrive o Baidu) · <span class="url">github.com/nwpu-zxr/VadCLIP</span>. Un vector de 512 por cada 16 frames, 10 recortes por video.</li>
-        <li><strong>Pesos preentrenados de VadCLIP</strong> (<code>model_ucf.pth</code>, 649 MB): mismo README, columna «Model».</li>
-        <li><strong>Videos originales</strong> (≈ 100 GB, solo para la demo): <span class="url">crcv.ucf.edu/projects/real-world</span>.</li>
-        <li><strong>En el notebook:</strong> rutas en la celda 1.1 (<code>features</code>, <code>lists</code>, <code>vadclip_pth</code>). Si <code>lists</code> queda vacío, el repositorio de VadCLIP se clona solo.</li>
+        <li><strong>Features, listas y anotaciones:</strong> <span class="url">github.com/nwpu-zxr/VadCLIP</span> (columna «CLIP»)</li>
+        <li><strong>Pesos de VadCLIP:</strong> <code>model_ucf.pth</code>, mismo README (columna «Model»)</li>
+        <li><strong>Videos</strong> (solo demo): <span class="url">crcv.ucf.edu/projects/real-world</span></li>
       </ul>
     </div>
   </div>
@@ -234,55 +249,55 @@ code{font-size:.9em;background:var(--paper-hi);padding:0 4px;border:1px solid va
 </section>
 
 <!-- 5 · Componentes -->
-<section class="slide" data-short="Componentes" data-time="1:15">
+<section class="slide" data-short="Módulos" data-time="1:00">
   <h2 data-b>Cómo funciona cada componente</h2>
-  <div class="chan" data-b style="--d:1"><div class="lab">Etapa A · Features</div><div><h3>CLIP ViT-B/16 congelado</h3>
-    <p>Cada fragmento de 16 frames se resume en un vector de 512 con el contenido semántico de la escena. Usamos las features precalculadas de VadCLIP (recorte 5, el de su evaluación).</p></div></div>
-  <div class="chan" data-b style="--d:2"><div class="lab">Etapa A · Contexto</div><div><h3>Transformer local + dos grafos</h3>
-    <p>La atención solo mira bloques de 8 fragmentos (≈ 4 s), así el contexto global no «pinta» todo el video. Un grafo une fragmentos parecidos (coseno &gt; 0,7); otro, los cercanos en el tiempo.</p></div></div>
-  <div class="chan" data-b style="--d:3"><div class="lab">Etapa A · Cabezas</div><div><h3>Binaria (p1) y texto-visual (p2)</h3>
-    <p>p1: clasificador sigmoide por fragmento. p2: similitud con 14 prompts de clase aprendidos, 1 − P(Normal). p1 decide <em>si</em> hay anomalía; el promedio de ambas, <em>dónde</em>.</p></div></div>
-  <div class="chan" data-b style="--d:4"><div class="lab">Etapa C · Localización</div><div><h3>IoU esperado en vez de umbral fijo</h3>
-    <p>El score queda alto en buena parte del video y un umbral fijo marca de más. Con p = 0,1 + 0,9·z¹² se marcan los k fragmentos que maximizan el IoU esperado: pico agudo → evento corto; meseta → largo.</p></div></div>
-  <p class="muted" data-b style="--d:5;font-size:16.5px;margin-top:14px">No reentrenamos VadCLIP: convertimos sus pesos oficiales de PyTorch a TensorFlow y verificamos la salida (AUC por frame 0,879 vs 0,880 del artículo).</p>
+  <div class="chan" data-b style="--d:1"><div class="lab">A · Features</div><div><h3>CLIP ViT-B/16 congelado</h3>
+    <p>Un vector de 512 por cada 16 frames (features precalculadas de VadCLIP).</p></div></div>
+  <div class="chan" data-b style="--d:2"><div class="lab">A · Contexto</div><div><h3>Transformer local + dos grafos</h3>
+    <p>Atención en bloques de 8 fragmentos; grafos de similitud y de cercanía temporal.</p></div></div>
+  <div class="chan" data-b style="--d:3"><div class="lab">A · Cabezas</div><div><h3>p1 binaria y p2 texto-visual</h3>
+    <p>p1 decide <em>si</em> hay anomalía; (p1 + p2) / 2 decide <em>dónde</em>.</p></div></div>
+  <div class="chan" data-b style="--d:4"><div class="lab">C · Localización</div><div><h3>IoU esperado</h3>
+    <p>Marca los k fragmentos que maximizan el IoU esperado, en vez de un umbral fijo.</p></div></div>
+  <p class="muted" data-b style="--d:5;font-size:16.5px;margin-top:16px">Pesos oficiales convertidos a TensorFlow: AUC por frame 0,879 vs 0,880 del artículo.</p>
 </section>
 
 <!-- 6 · Entrega 2 -->
 <section class="slide" data-short="Entrega 2" data-time="0:30">
-  <h2 data-b>Punto de partida (Entrega 2): detectaba <em>si</em> había anomalía, pero no <em>cuándo</em></h2>
-  <p class="muted" data-b style="--d:1;font-size:17.5px;margin:-12px 0 16px">Transformer temporal propio (2 capas, 8 cabezas) entrenado con MIL top-k + priors, umbral fijo 0,09 calibrado en validación.</p>
+  <h2 data-b>Punto de partida (Entrega 2): detectaba <em>si</em>, no <em>cuándo</em></h2>
+  <p class="muted" data-b style="--d:1;font-size:17.5px;margin:-12px 0 16px">Transformer propio · MIL top-k · umbral fijo 0,09</p>
   <div>
-    <div class="rd" data-b style="--d:1"><div class="k">AUC por video (test)<small>separa videos anómalos y normales</small></div>
+    <div class="rd" data-b style="--d:1"><div class="k">AUC por video<small>anómalos vs normales</small></div>
       <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:97.8%;--d:1"></span></div>
       <div class="val"><span data-count>0,978</span><svg class="mk ok"><use href="#i-ok"/></svg></div></div>
-    <div class="rd" data-b style="--d:2"><div class="k">Falsas alarmas<small>videos normales con alguna falsa alarma</small></div>
+    <div class="rd" data-b style="--d:2"><div class="k">Falsas alarmas<small>videos normales</small></div>
       <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:10%;--d:2"></span></div>
       <div class="val"><span data-count>10 %</span><svg class="mk ok"><use href="#i-ok"/></svg></div></div>
-    <div class="rd" data-b style="--d:3"><div class="k">AUC por frame (estándar)<small>VadCLIP reporta ≈ 0,88</small></div>
+    <div class="rd" data-b style="--d:3"><div class="k">AUC por frame<small>VadCLIP reporta ≈ 0,88</small></div>
       <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="rf" style="left:88%"><span>VadCLIP</span></span><span class="v" style="width:69.4%;--d:3"></span></div>
       <div class="val"><span data-count>0,694</span></div></div>
-    <div class="rd" data-b style="--d:4"><div class="k">AUC de localización<small>apenas sobre el azar (0,5)</small></div>
+    <div class="rd" data-b style="--d:4"><div class="k">AUC de localización<small>casi azar (0,5)</small></div>
       <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:100%"></span><span class="rf" style="left:50%"><span>azar</span></span><span class="v" style="width:58.9%;--d:4"></span></div>
       <div class="val"><span data-count>0,589</span><svg class="mk ko"><use href="#i-ko"/></svg></div></div>
-    <div class="rd" data-b style="--d:5"><div class="k">IoU medio detectado vs real<small>39 % de eventos con IoU ≥ 0,3</small></div>
+    <div class="rd" data-b style="--d:5"><div class="k">IoU medio<small>39 % de eventos con IoU ≥ 0,3</small></div>
       <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:24.4%;--d:5"></span></div>
       <div class="val"><span data-count>0,244</span><svg class="mk ko"><use href="#i-ko"/></svg></div></div>
-    <div class="rd" data-b style="--d:6"><div class="k">Precisión / recall por frame<small>intervalos demasiado anchos</small></div>
+    <div class="rd" data-b style="--d:6"><div class="k">Precisión / recall por frame<small>intervalos anchos</small></div>
       <div class="trk"><span class="t" style="left:0"></span><span class="t" style="left:50%"></span><span class="t" style="left:100%"></span><span class="v" style="width:28%;--d:6"><i>P</i></span><span class="v" style="width:49%;--d:7"><i>R</i></span></div>
       <div class="val"><span data-count>0,28 / 0,49</span></div></div>
   </div>
 </section>
 
 <!-- 7 · Cambios de la Entrega 3 -->
-<section class="slide" data-short="Cambios" data-time="1:00">
+<section class="slide" data-short="Cambios" data-time="0:50">
   <h2 data-b>Qué cambiamos en la tercera entrega</h2>
-  <div class="cols" style="grid-template-columns:1.3fr 1fr;gap:40px;align-items:start">
+  <div class="cols" style="grid-template-columns:1.25fr 1fr;gap:40px;align-items:start">
     <ul>
-      <li class="nx" data-b style="--d:1;font-size:17.5px"><svg class="mk nx"><use href="#i-nx"/></svg><strong>Modelo propio mejorado:</strong> convolución temporal antes del Transformer y nuevas pérdidas (contraste, fragmentos normales). Sube el AUC por frame, no el IoU.</li>
-      <li class="ko" data-b style="--d:2;font-size:17.5px"><svg class="mk ko"><use href="#i-ko"/></svg><strong>Arquitectura v2:</strong> atención local-global, rama de clases y pseudo-etiquetas. Más compleja y sin ganancia en IoU.</li>
-      <li class="ko" data-b style="--d:3;font-size:17.5px"><svg class="mk ko"><use href="#i-ko"/></svg><strong>Error encontrado:</strong> Keras cargaba los pesos omitiendo en silencio la capa convolucional (29 % de falsas alarmas). Corregido; el notebook ahora verifica la carga.</li>
-      <li class="ok" data-b style="--d:4;font-size:17.5px"><svg class="mk ok"><use href="#i-ok"/></svg><strong>VadCLIP preentrenado</strong> (AAAI 2024) portado a TensorFlow, sin reentrenar.</li>
-      <li class="ok" data-b style="--d:5;font-size:17.5px"><svg class="mk ok"><use href="#i-ok"/></svg><strong>Localización por IoU esperado</strong>, con parámetros elegidos por validación cruzada.</li>
+      <li class="nx" data-b style="--d:1;font-size:17.5px"><svg class="mk nx"><use href="#i-nx"/></svg>Modelo propio: conv. temporal + nuevas pérdidas.</li>
+      <li class="ko" data-b style="--d:2;font-size:17.5px"><svg class="mk ko"><use href="#i-ko"/></svg>Arquitectura v2 (local-global, pseudo-etiquetas): sin ganancia en IoU.</li>
+      <li class="ko" data-b style="--d:3;font-size:17.5px"><svg class="mk ko"><use href="#i-ko"/></svg>Error corregido: Keras omitía una capa en silencio.</li>
+      <li class="ok" data-b style="--d:4;font-size:17.5px"><svg class="mk ok"><use href="#i-ok"/></svg>VadCLIP preentrenado, portado a TensorFlow.</li>
+      <li class="ok" data-b style="--d:5;font-size:17.5px"><svg class="mk ok"><use href="#i-ok"/></svg>Localización por IoU esperado + validación cruzada.</li>
     </ul>
     <div data-b style="--d:2">
       <table class="cmp">
@@ -293,49 +308,46 @@ code{font-size:.9em;background:var(--paper-hi);padding:0 4px;border:1px solid va
         <tr><td>VadCLIP + umbral fijo</td><td class="n">0,879*</td><td class="n">0,218</td></tr>
         <tr><td><strong>VadCLIP + IoU esperado</strong></td><td class="n"><strong>0,874</strong></td><td class="n"><strong>0,245</strong></td></tr>
       </table>
-      <p class="cap">* AUC del score crudo de VadCLIP. El IoU del sistema final es de validación cruzada (5-fold) sobre test.</p>
+      <p class="cap">* AUC del score crudo de VadCLIP.</p>
     </div>
   </div>
 </section>
 
 <!-- 8 · Resultados de la Entrega 3 -->
-<section class="slide" data-short="Entrega 3" data-time="1:00">
+<section class="slide" data-short="Resultados" data-time="1:00">
   <h2 data-b>Resultados: el score mejoró mucho; el IoU, poco</h2>
-  <div class="cols" style="grid-template-columns:1.8fr 1fr;gap:30px;align-items:start">
+  <div class="cols" style="grid-template-columns:1.75fr 1fr;gap:30px;align-items:start">
     <div data-b style="--d:1">
-      <table class="cmp">
-        <tr><th>Métrica (test, 290 videos)</th><th class="n">Entrega 2</th><th class="n">Propio E3</th><th class="n">VadCLIP + IoU esp.</th></tr>
-        <tr><td>AUC por frame</td><td class="n">0,694</td><td class="n">0,840</td><td class="n"><strong>0,874</strong></td></tr>
-        <tr><td>AUC por video</td><td class="n"><strong>0,978</strong></td><td class="n">0,964</td><td class="n">0,971</td></tr>
-        <tr><td>AUC de localización</td><td class="n">0,589</td><td class="n">0,609</td><td class="n"><strong>0,687</strong></td></tr>
-        <tr><td>IoU medio (videos anómalos)</td><td class="n">0,244</td><td class="n">0,212</td><td class="n"><strong>0,245</strong></td></tr>
-        <tr><td>Eventos detectados (IoU ≥ 0,3)</td><td class="n">39,1 %</td><td class="n">37,8 %</td><td class="n"><strong>41,7 %</strong></td></tr>
-        <tr><td>Intervalos que coinciden con un evento</td><td class="n">14,7 %</td><td class="n">18,0 %</td><td class="n"><strong>23,0 %</strong></td></tr>
-        <tr><td>Precisión / recall por frame</td><td class="n"><strong>0,276</strong> / 0,488</td><td class="n">0,240 / 0,674</td><td class="n">0,169 / <strong>0,727</strong></td></tr>
-        <tr><td>F1 por frame</td><td class="n">0,352</td><td class="n"><strong>0,354</strong></td><td class="n">0,274</td></tr>
-        <tr><td>Falsas alarmas (videos normales)</td><td class="n">10,0 %</td><td class="n">8,0 %</td><td class="n"><strong>6,7 %</strong></td></tr>
-      </table>
-      <p class="cap">Mismo test oficial y mismas métricas en las tres columnas. En negrita, el mejor valor de cada fila.</p>
+      <div class="gb" id="cmpchart" aria-label="Métricas de test de la Entrega 2, el modelo propio y el sistema final"></div>
+      <p class="cap">Test oficial, 290 videos. IoU del sistema final: validación cruzada 5-fold.</p>
     </div>
-    <figure data-b style="--d:2"><div class="plate"><img src="img/roc_frame_2.png" alt="Curva ROC por frame del sistema final"></div><figcaption class="cap">Curva ROC por frame del sistema final (AUC 0,874)</figcaption></figure>
+    <figure data-b style="--d:2"><div class="plate"><img src="img/roc_frame_2.png" alt="Curva ROC por frame del sistema final"></div><figcaption class="cap">ROC por frame del sistema final · AUC 0,874</figcaption></figure>
   </div>
 </section>
 
-<!-- 9 · Resultados por clase -->
-<section class="slide" data-short="Por clase" data-time="0:45">
-  <h2 data-b>La localización sigue dependiendo del tipo de evento</h2>
+<!-- 9 · Detección por video -->
+<section class="slide" data-short="Detección" data-time="0:45">
+  <h2 data-b>Detección por video: 120 de 140 anomalías, 10 falsas alarmas</h2>
+  <div class="cols" style="grid-template-columns:380px 1fr;gap:30px;align-items:start">
+    <figure data-b style="--d:1"><div class="plate"><img src="img/matriz_confusion_2.png" alt="Matriz de confusión por video del sistema final"></div><figcaption class="cap">Precisión 92 % · recall 86 % por video</figcaption></figure>
+    <figure data-b style="--d:2"><div class="plate"><img src="img/score_por_clase_2.png" alt="Score máximo por clase frente al umbral de video"></div><figcaption class="cap">Score máximo por clase vs umbral 0,71: Shoplifting y RoadAccidents caen debajo con frecuencia.</figcaption></figure>
+  </div>
+</section>
+
+<!-- 10 · Resultados por clase -->
+<section class="slide" data-short="Por clase" data-time="0:40">
+  <h2 data-b>La localización depende del tipo de evento</h2>
   <div class="cols" style="grid-template-columns:1.6fr 1fr;gap:34px">
     <div class="bwrap" data-b style="--d:1" id="bars" aria-label="IoU medio y eventos detectados por clase"></div>
     <div>
-      <p data-b style="--d:2;font-size:18px;margin-bottom:12px"><strong>Bien:</strong> Stealing (0,52), Robbery (0,45) y Fighting (0,41), eventos con una acción visible y acotada.</p>
-      <p data-b style="--d:3;font-size:18px;margin-bottom:12px"><strong>Mal:</strong> RoadAccidents y Shoplifting (≈ 0,11), cada una con más de 20 videos de test.</p>
-      <p data-b style="--d:4;font-size:16px;margin-bottom:16px" class="muted">Hipótesis: los accidentes duran instantes pero sus efectos siguen en escena; el hurto en tiendas es sutil. Abuse solo tiene 2 videos de test, no es concluyente.</p>
-      <div class="note" data-b style="--d:5">Frente a la Entrega 2 mejoran Stealing (0,30 → 0,52), Arson (0,29 → 0,39) y Explosion (0,15 → 0,23); empeoran Robbery (0,65 → 0,45) y RoadAccidents (0,15 → 0,11).</div>
+      <p data-b style="--d:2;font-size:18px;margin-bottom:12px"><strong>Bien:</strong> Stealing, Robbery y Fighting (≥ 0,41): acciones visibles y acotadas.</p>
+      <p data-b style="--d:3;font-size:18px;margin-bottom:16px"><strong>Mal:</strong> RoadAccidents y Shoplifting (≈ 0,11): efectos que duran o gestos sutiles.</p>
+      <div class="note" data-b style="--d:4">vs Entrega 2: suben Stealing, Arson y Explosion; bajan Robbery y RoadAccidents.</div>
     </div>
   </div>
 </section>
 
-<!-- 10 · Ejemplos -->
+<!-- 11 · Ejemplos -->
 <section class="slide" data-short="Ejemplos" data-time="0:30">
   <h2 data-b>Ejemplos: los mejores y los peores casos</h2>
   <div class="cols" style="grid-template-columns:400px 1fr;gap:36px">
@@ -343,52 +355,57 @@ code{font-size:.9em;background:var(--paper-hi);padding:0 4px;border:1px solid va
     <div>
       <p data-b style="--d:1;font-size:16.5px;margin-bottom:14px"><span class="sw" style="background:#ffe9a6"></span>evento real &nbsp; <span class="sw" style="background:#f4a3a3"></span>detectado</p>
       <ul>
-        <li class="ok" data-b style="--d:2;font-size:17.5px"><svg class="mk ok"><use href="#i-ok"/></svg>Arriba: Explosion022, Arson016 y Robbery137 con IoU 0,90–1,00.</li>
-        <li class="ko" data-b style="--d:3;font-size:17.5px"><svg class="mk ko"><use href="#i-ko"/></svg>Abajo: tres Shoplifting con IoU 0. En 049 el score queda alto todo el video; 037 y 039 no superan el umbral y no se marcan.</li>
-        <li class="nx" data-b style="--d:4;font-size:17.5px"><svg class="mk nx"><use href="#i-nx"/></svg>Burglary024, el mejor caso de la Entrega 2 (IoU 0,96), cae a 0,09: VadCLIP lo puntúa sobre 0,8 en todo el video.</li>
+        <li class="ok" data-b style="--d:2;font-size:17.5px"><svg class="mk ok"><use href="#i-ok"/></svg>Arriba: Explosion022, Arson016, Robbery137 (IoU 0,90–1,00).</li>
+        <li class="ko" data-b style="--d:3;font-size:17.5px"><svg class="mk ko"><use href="#i-ko"/></svg>Abajo: tres Shoplifting con IoU 0.</li>
+        <li class="nx" data-b style="--d:4;font-size:17.5px"><svg class="mk nx"><use href="#i-nx"/></svg>Burglary024: 0,96 en la Entrega 2 → 0,09 (score alto todo el video).</li>
       </ul>
       <div class="cols c2" style="gap:16px;margin-top:14px">
-        <figure><div class="plate" style="--d:3"><img src="img/demo_t20_2.png" alt="Frame anómalo de Explosion022"></div><figcaption class="cap">Explosion022 · t = 77 s · anomalía</figcaption></figure>
-        <figure><div class="plate" style="--d:4"><img src="img/demo_t90_2.png" alt="Frame normal de Explosion022"></div><figcaption class="cap">Explosion022 · t = 30 s · normal</figcaption></figure>
+        <figure><div class="plate" style="--d:3"><img src="img/demo_t20_2.png" alt="Frame anómalo de Explosion022"></div><figcaption class="cap">t = 77 s · anomalía</figcaption></figure>
+        <figure><div class="plate" style="--d:4"><img src="img/demo_t90_2.png" alt="Frame normal de Explosion022"></div><figcaption class="cap">t = 30 s · normal</figcaption></figure>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 11 · Análisis y conclusiones -->
-<section class="slide" data-short="Conclusiones" data-time="1:15">
-  <h2 data-b>Análisis de resultados y conclusiones</h2>
-  <div class="cols c2">
-    <div class="col" data-b style="--d:1">
-      <h3>Qué interpretamos</h3>
-      <ul class="sm">
-        <li>El preentrenamiento de VadCLIP ordena mucho mejor los fragmentos: AUC por frame <strong>0,69 → 0,87</strong> y de localización <strong>0,59 → 0,69</strong>.</li>
-        <li>Pero el IoU casi no se mueve (<strong>≈ 0,24</strong>): el problema es decidir <em>cuánto</em> marcar. El score de VadCLIP supera 0,5 en ~75 % de cada video anómalo; el evento real cubre el 22 %.</li>
-        <li>Referencias: marcar todo el video ya da IoU 0,217; con el umbral ideal por video, el mismo score llegaría a 0,43. La brecha está en la extensión, no en el orden.</li>
-        <li>El IoU esperado ajusta mejor la extensión (0,218 → 0,245), a cambio de precisión: marca más frames.</li>
-      </ul>
-    </div>
-    <div class="col" data-b style="--d:2">
-      <h3>Conclusiones</h3>
-      <ul class="sm">
-        <li><strong>Detectar</strong> si un video es anómalo funciona: AUC por video 0,97 y 6,7 % de falsas alarmas.</li>
-        <li><strong>Localizar</strong> con solo etiquetas por video sigue abierto: IoU ≈ 0,21–0,25 en todas las versiones.</li>
-        <li>Siguiente paso: estimar la duración del evento, por ejemplo entrenando nuestro modelo con las curvas de VadCLIP como pseudo-etiquetas.</li>
-        <li>Lección: verificar la carga de pesos y medir sin fuga de etiquetas.</li>
-      </ul>
-      <div class="note" data-b style="--d:3;font-size:16px;margin-top:6px">Val no tiene anotación temporal, así que los parámetros de localización se eligieron con validación cruzada sobre test: ningún video se evalúa con parámetros ajustados con sus propias etiquetas.</div>
+<!-- 12 · Análisis -->
+<section class="slide" data-short="Análisis" data-time="1:00">
+  <h2 data-b>Por qué el IoU no sube: el score se satura</h2>
+  <div class="cols c2" style="gap:36px;align-items:start">
+    <figure data-b style="--d:1"><div class="plate"><img src="img/distribucion_scores_2.png" alt="Distribución del score en frames normales y anómalos dentro de videos anómalos"></div><figcaption class="cap">Dentro de los videos anómalos, frames normales y anómalos se acumulan cerca de 1.</figcaption></figure>
+    <div data-b style="--d:2">
+      <h3 style="margin-bottom:10px">IoU medio en test</h3>
+      <div class="gb" id="techo" aria-label="IoU medio de distintas estrategias de localización"></div>
+      <p class="cap">El orden de los fragmentos es bueno; falta saber <em>cuánto</em> marcar.</p>
     </div>
   </div>
 </section>
 
-<!-- 12 · Notebook -->
+<!-- 13 · Conclusiones -->
+<section class="slide" data-short="Cierre" data-time="0:45">
+  <h2 data-b>Conclusiones</h2>
+  <div class="tiles" data-b style="--d:1">
+    <div class="tile"><div class="l">AUC por frame</div><div class="v">0,874</div><div class="d up">+0,180 vs Entrega 2</div></div>
+    <div class="tile"><div class="l">AUC de localización</div><div class="v">0,687</div><div class="d up">+0,098 vs Entrega 2</div></div>
+    <div class="tile"><div class="l">IoU medio</div><div class="v">0,245</div><div class="d eq">+0,001 vs Entrega 2</div></div>
+    <div class="tile"><div class="l">Falsas alarmas</div><div class="v">6,7 %</div><div class="d up">−3,3 pp vs Entrega 2</div></div>
+  </div>
+  <ul>
+    <li class="ok" data-b style="--d:1"><svg class="mk ok"><use href="#i-ok"/></svg><strong>Detectar</strong> si un video es anómalo funciona: AUC 0,97 y 6,7 % de falsas alarmas.</li>
+    <li class="ok" data-b style="--d:2"><svg class="mk ok"><use href="#i-ok"/></svg>VadCLIP llevó el AUC por frame de 0,69 a 0,87, el nivel del artículo.</li>
+    <li class="ko" data-b style="--d:3"><svg class="mk ko"><use href="#i-ko"/></svg><strong>Localizar</strong> sigue abierto: IoU ≈ 0,25 en todas las versiones.</li>
+    <li class="nx" data-b style="--d:4"><svg class="mk nx"><use href="#i-nx"/></svg>Siguiente paso: estimar la duración del evento (p. ej., destilar VadCLIP en nuestro modelo).</li>
+  </ul>
+  <div class="note" data-b style="--d:5;margin-top:18px;max-width:900px">Val no tiene anotación temporal: los parámetros de localización se eligieron con validación cruzada sobre test.</div>
+</section>
+
+<!-- 14 · Notebook -->
 <section class="slide" data-short="Notebook" data-time="0:30">
   <h2 data-b>Notebook: deteccion_anomalias_tf.ipynb</h2>
-  <div class="cols c2" style="gap:24px">
-    <figure data-b style="--d:1"><div class="plate"><img src="img/nb_vista1_2.png" alt="Celda 3.4 del notebook: VadCLIP portado a TensorFlow"></div><figcaption class="cap">3.4 · VadCLIP en TensorFlow: convierte una vez los pesos oficiales y define la red con operaciones de TF.</figcaption></figure>
-    <figure data-b style="--d:2"><div class="plate"><img src="img/nb_vista2_2.png" alt="Celda 4.2 del notebook: métricas de test del modelo propio y del sistema final"></div><figcaption class="cap">4.2 · Métricas de test: modelo propio vs VadCLIP + IoU esperado (validación cruzada 5-fold).</figcaption></figure>
+  <div class="cols" style="grid-template-columns:1fr 1.35fr;gap:24px;align-items:start">
+    <figure data-b style="--d:1"><div class="plate"><img src="img/nb_vista1_2.png" alt="Celda 3.4 del notebook: VadCLIP portado a TensorFlow"></div><figcaption class="cap">3.4 · VadCLIP en TensorFlow</figcaption></figure>
+    <figure data-b style="--d:2"><div class="plate"><img src="img/nb_vista2_2.png" alt="Celda 4.2 del notebook: métricas de test del modelo propio y del sistema final"></div><figcaption class="cap">4.2 · Métricas: modelo propio vs sistema final</figcaption></figure>
   </div>
-  <p class="muted" data-b style="--d:3;font-size:17px;margin-top:16px">Para ejecutarlo: rutas y modo en la celda 1.1 → <em>Run All</em> → en la celda 5.2 se elige un video y se genera el MP4 anotado. Funciona en local o en Colab.</p>
+  <p class="muted" data-b style="--d:3;font-size:17px;margin-top:16px">Celda 1.1 (rutas) → <em>Run All</em> → celda 5.2 (video propio). Local o Colab.</p>
 </section>
 
 </div>
@@ -435,6 +452,22 @@ const CL=[["Stealing",5,0.518,6,7,"ok"],["Robbery",5,0.451,4,5,"ok"],["Fighting"
     h+=`<div class="bc"><div class="bar grow" style="width:${det*82}%;--d:${i}"></div><span class="bv">${fmt(det.toFixed(2))}</span></div>`;});
   h+='</div>';b.innerHTML=h;
 })();
+
+// Resultados: métricas de test por versión (Entrega 2 = README; las otras dos = notebook, trabajo/modelo_tf/metricas.json)
+const SER=[["Entrega 2","#2f8a4c"],["Modelo propio E3","#d39b12"],["VadCLIP + IoU esperado","#c8281e"]];
+const CMP=[["AUC por frame",[.694,.840,.874]],["AUC de localización",[.589,.609,.687]],["IoU medio",[.244,.212,.245]],
+  ["Eventos detectados (IoU ≥ 0,3)",[.391,.378,.417],0],["Recall por frame",[.488,.674,.727]],["Precisión por frame",[.276,.240,.169]],
+  ["Falsas alarmas (menos es mejor)",[.100,.080,.067],1]];
+(function(){const val=(v,p)=>p!==undefined?fmt((v*100).toFixed(p))+' %':fmt(v.toFixed(3));
+  let h='<div class="lg">'+SER.map(([n,c])=>`<span><i style="background:${c}"></i>${n}</span>`).join('')+'</div>';
+  CMP.forEach(([m,vs,p],i)=>{h+=`<div class="gr"><div class="m">${m}</div><div>`+vs.map((v,j)=>
+    `<div class="gbar"><div class="b grow" style="width:${v*86}%;background:${SER[j][1]};--d:${i}"></div><span>${val(v,p)}</span></div>`).join('')+'</div></div>';});
+  document.getElementById('cmpchart').innerHTML=h;})();
+
+// Análisis: IoU de referencias y estrategias (todo el video y oráculo calculados sobre test con el score final)
+const TECHO=[["Marcar todo el video",.217,"ref"],["Entrega 2",.244],["VadCLIP + umbral fijo",.218],["VadCLIP + IoU esperado",.245,"fin"],["Umbral ideal por video (oráculo)",.434,"ora"]];
+(function(){let h='';TECHO.forEach(([n,v,k],i)=>{h+=`<div class="gr"><div class="m">${n}</div><div class="gbar"><div class="b grow ${k||''}" style="width:${v/.5*86}%;--d:${i}"></div><span>${fmt(v.toFixed(3))}</span></div></div>`;});
+  document.getElementById('techo').innerHTML=h;})();
 
 function placeRefs(){const b=document.getElementById('bars');if(!b.offsetWidth||b.querySelector('.ref'))return;
   const cols=b.querySelectorAll('.hd');
