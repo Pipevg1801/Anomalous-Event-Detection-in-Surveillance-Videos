@@ -7,6 +7,7 @@ torch
 torchvision
 opencv-python
 pillow
+tensorflow
 
 # Data Analysis & Scientific Computing
 numpy
